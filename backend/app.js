@@ -12,13 +12,18 @@ module.exports ={
     User: require('./schemas/users_schema'),
     Hardware: require('./schemas/hardware_schema'),
     Io: require('./schemas/IO_schema'),
-    Project: require('./schemas/projects_schema')
+    Project: require('./schemas/projects_schema'),
+    Hmi: require('./schemas/Hmi_schema')
 }
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/selection_tool_DB')
 .then(() => console.log('MongoDB connected'))
 .catch(err => console.log(err));
 
+app.use((req, res, next) => {
+    console.log(req.method, req.url);
+    next();
+});
 
 app.get('/login', (req, res) => {
     res.send('Login page - frontend pending');

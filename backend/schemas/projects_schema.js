@@ -10,7 +10,8 @@ const projectSchema = new mongoose.Schema({
     hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
     quantity: { type: Number },
     selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }]
-  }]
+  }],
+  Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' }
 });
 
 const Project = mongoose.model('Project', projectSchema);

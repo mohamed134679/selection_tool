@@ -1,3 +1,4 @@
+
 // Devices (Hardware catalog) — Port_no/image/license unchanged, licence field left as-is
 const mongoose = require('mongoose');
 const hardwareSchema = new mongoose.Schema({
