@@ -64,12 +64,14 @@ app.post('/register', async (req, res) => {
 
 const ioRoutes = require('./routes/io');
 const hmiRoutes = require('./routes/hmi');
-
+const projectRoutes = require('./routes/project');
+const hardwareRoutes = require('./routes/hardware');
 // Register routes
 
 app.use('/io', ioRoutes);
 app.use('/hmi', hmiRoutes);
-
+app.use('/projects', projectRoutes);
+app.use('/hardware', hardwareRoutes);
 const port = 3000;
 app.listen(port, () => {
     console.log(`Server is running on port ${port}`);
