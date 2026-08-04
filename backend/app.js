@@ -15,6 +15,8 @@ module.exports ={
     Project: require('./schemas/projects_schema'),
     Hmi: require('./schemas/Hmi_schema')
 }
+
+
 // Connect to MongoDB
 mongoose.connect('mongodb://localhost:27017/selection_tool_DB')
 .then(() => console.log('MongoDB connected'))
@@ -58,6 +60,15 @@ app.post('/register', async (req, res) => {
     await newUser.save();
     res.status(201).json({ message: 'User registered successfully' });
 });
+
+
+const ioRoutes = require('./routes/io');
+const hmiRoutes = require('./routes/hmi');
+
+// Register routes
+
+app.use('/io', ioRoutes);
+app.use('/hmi', hmiRoutes);
 
 const port = 3000;
 app.listen(port, () => {

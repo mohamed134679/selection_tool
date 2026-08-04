@@ -1,11 +1,10 @@
-const express = required('express');
+const express = require('express');
 const router = express.Router();
-
 
 const Io = require('../schemas/IO_schema');
 
 //create a new IO entry
-router.post('/io', async (req, res) => {
+router.post('/', async (req, res) => {
     try {
         const newIo = new Io(req.body);
         await newIo.save();
