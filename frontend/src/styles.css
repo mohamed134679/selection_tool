@@ -1,4 +1,4 @@
-:root {
+/* :root {
   --bg: #0f161f;
   --surface: #151f2a;
   --surface-raised: #1b2733;
@@ -68,7 +68,7 @@ input:focus-visible {
   }
 }
 
-/* ---------- Header ---------- */
+
 
 .app-header {
   margin-bottom: 32px;
@@ -99,7 +99,7 @@ input:focus-visible {
   max-width: 640px;
 }
 
-/* ---------- Signature: architecture stack ---------- */
+
 
 .stack {
   display: flex;
@@ -176,7 +176,7 @@ input:focus-visible {
   color: var(--text);
 }
 
-/* ---------- Step card ---------- */
+
 
 .step-card {
   background: var(--surface);
@@ -212,8 +212,6 @@ input:focus-visible {
   max-width: 620px;
   line-height: 1.5;
 }
-
-/* ---------- Option grid / cards ---------- */
 
 .option-grid {
   display: grid;
@@ -375,7 +373,7 @@ input:focus-visible {
   padding: 2px 6px;
 }
 
-/* ---------- Nav / actions ---------- */
+
 
 .step-actions {
   display: flex;
@@ -416,7 +414,7 @@ input:focus-visible {
   border-color: var(--accent-strong);
 }
 
-/* ---------- Result panel ---------- */
+
 
 .result-summary {
   display: grid;
@@ -559,3 +557,8 @@ input:focus-visible {
     grid-template-columns: 1fr;
   }
 }
+
+ */
+
+
+ 

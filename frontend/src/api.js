@@ -1,4 +1,4 @@
-const BASE = "/api";
+const BASE = import.meta.env.VITE_API_BASE || "http://localhost:3000";
 
 export async function getOptions() {
   const res = await fetch(`${BASE}/options`);
@@ -23,4 +23,28 @@ export async function postRecommend(payload) {
     throw new Error(body.error || "Failed to compute recommendation");
   }
   return res.json();
+}
+
+export async function login(username, password) {
+  const res = await fetch(`${BASE}/auth/login`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ username, password }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || 'Login failed');
+  return body;
+}
+
+export async function register({ username, password, accountType }) {
+  const res = await fetch(`${BASE}/auth/register`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ username, password, accountType }),
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || 'Registration failed');
+  return body;
 }
