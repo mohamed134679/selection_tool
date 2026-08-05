@@ -59,9 +59,14 @@ app.use((req, res, next) => {
 });
 
 // Connect to MongoDB
+const seedHardware = require('./Seeder/hardwareSeeder');
+
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/selection_tool_DB')
-  .then(() => console.log('MongoDB connected'))
+  .then(async () => {
+    console.log('MongoDB connected');
+    await seedHardware();
+  })
   .catch((err) => console.log(err));
 
 app.get('/health', (req, res) => res.status(200).json({ status: 'ok' }));
@@ -91,6 +96,6 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
-const seedHardware = require('./seeders/hardwareSeeder');
+// const seedHardware = require('./Seeder/hardwareSeeder');
 
 module.exports = require('./schemas');
