@@ -179,7 +179,11 @@ import { useEffect } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import HomePage from "./pages/HomePage";
+
 import ProjectBuilderPage from "./pages/ProjectBuilderPage";
+
+import Hmi from "./pages/Hmi";
+
 
 function App() {
   useEffect(() => {
@@ -194,6 +198,7 @@ function App() {
       <Route path="/projects/new" element={<ProjectBuilderPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
+      <Route path="/hmi" element={<Hmi />} />
     </Routes>
   );
 }

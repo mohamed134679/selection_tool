@@ -15,6 +15,28 @@ router.get('/:id', async (req, res) => {
     }
 });
 
+router.get('/', async (req, res) => {
+    try {
+        const hardwareList = await hardware.find();
+
+        res.json(hardwareList);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+router.get('/type/:type', async (req, res) => {
+    try {
+        const hardwareList = await hardware.find({
+            type: req.params.type
+        });
+
+        res.json(hardwareList);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const newHardware = new hardware(req.body);
