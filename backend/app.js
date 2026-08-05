@@ -91,4 +91,6 @@ app.listen(port, () => {
   console.log(`Server is running on port ${port}`);
 });
 
+const seedHardware = require('./seeders/hardwareSeeder');
+
 module.exports = require('./schemas');
