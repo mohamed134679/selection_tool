@@ -179,6 +179,7 @@ import { useEffect } from "react";
 import Login from "./pages/Login";
 import Register from "./pages/Register";
 import HomePage from "./pages/HomePage";
+import ProjectBuilderPage from "./pages/ProjectBuilderPage";
 
 function App() {
   useEffect(() => {
@@ -190,6 +191,7 @@ function App() {
   return (
     <Routes>
       <Route path="/" element={<HomePage />} />
+      <Route path="/projects/new" element={<ProjectBuilderPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
     </Routes>
