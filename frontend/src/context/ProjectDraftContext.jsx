@@ -4,6 +4,8 @@ const ProjectDraftContext = createContext();
 
 export const ProjectDraftProvider = ({ children }) => {
   const [projectDraft, setProjectDraft] = useState({
+    name: "",
+    description: "",
     selectedHw: [],
     hmiId: null,
     licences: {

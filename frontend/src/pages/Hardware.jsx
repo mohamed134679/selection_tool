@@ -2,18 +2,22 @@ import { useEffect, useState } from "react";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
+import { useSearchParams } from "react-router-dom";
 import HardwarePopup from "./HardwarePopup.jsx";
 
 export default function Hardware() {
   const { projectDraft, setProjectDraft } = useProjectDraft();
   const [hardwareOptions, setHardwareOptions] = useState([]);
   const [popupHw, setPopupHw] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [pendingCategory, setPendingCategory] = useState(null);
+  const category = searchParams.get("category");
   const navigate = useNavigate();
 
   useEffect(() => {
     fetch("http://localhost:3000/hardware")
       .then((res) => res.json())
-      .then((data) => setHardwareOptions(data.filter((hw) => hw.type !== "3rd Party")))
+      .then(setHardwareOptions)
       .catch(() => {});
   }, []);
 
@@ -38,12 +42,41 @@ function removeOneUnit(hwId) {
   });
 }
 
+if(!category) {
+    return (
+        <div className="max-w-5xl mx-auto p-8">
+            <h1 className="text-2xl font-bold text-gray-900 mb-6">Choose Hardware Category</h1>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                <div
+                    onClick={() => setPendingCategory("SoftdPAC")}
+                    className={`rounded-2xl border p-6 cursor-pointer trasition ${pendingCategory === "SoftdPAC" ? "border-green-600 shadow-md" : "border-gray-200 hover:border-green-600 hover:shadow-md"}`}
+                >
+                    <h3 className="text-lg font-semibold text-gray-900">SoftdPAC</h3>
+                </div>
+                <div
+                    onClick={() => setPendingCategory("IEC61499")}
+                    className={`rounded-2xl border p-6 cursor-pointer trasition ${pendingCategory === "IEC61499" ? "border-green-600 shadow-md" : "border-gray-200 hover:border-green-600 hover:shadow-md"}`}
+                >
+                    <h3 className="text-lg font-semibold text-gray-900">IEC61499</h3>
+                </div>
+            </div>
+            <div className="flex justify-end mt-8">
+                <Button
+                    disabled={!pendingCategory}
+                    onClick={() => setSearchParams({ category: pendingCategory })}
+                >
+                    Next
+                </Button>
+            </div>
+        </div>
+    );
+}
 
   return (
     <div className="max-w-5xl mx-auto p-8">
       <h1 className="text-2xl font-bold text-gray-900 mb-6">Choose Hardware</h1>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-{hardwareOptions.map((hw) => {
+{hardwareOptions.filter((hw) => hw.type === category).map((hw) => {
   const entries = getEntries(hw._id);
   return (
     <div key={hw._id} className="rounded-2xl border border-gray-200 p-6">

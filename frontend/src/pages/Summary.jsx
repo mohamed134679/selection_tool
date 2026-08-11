@@ -8,7 +8,6 @@ export default function Summary() {
     const [hmiOptions,setHmiOptions] = useState([]);
     const [licenseCatalog, setLicenseCatalog] = useState([]);
     const [hardwareCatalog, setHardwareCatalog] = useState([]);
-    const [projectName, setProjectName] = useState("");
     const [saveError, setSaveError] = useState(null);
     const [saved, setSaved] = useState(false);
 
@@ -49,7 +48,8 @@ export default function Summary() {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
-                    name: projectName,
+                    name: projectDraft.name,
+                    description: projectDraft.description,
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
                     licences: projectDraft.licences,
@@ -169,22 +169,15 @@ const requiredLicenses = requiredLicenseNames
                 )}
             </div>
                 <div className="mt-8">
-                <input
-                    type="text"
-                    value={projectName}
-                    onChange={(e) => setProjectName(e.target.value)}
-                    placeholder="Project name"
-                    className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-4"
-                />
                 {saveError && <p className="text-sm text-red-700 mb-4">{saveError}</p>}
                 {saved ? (
                     <p className="text-green-700 font-medium">Project created!</p>
                 ) : (
                     <button
-                        disabled={!projectName}
+                        disabled={!projectDraft.name}
                         onClick={createProject}
                         className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
-                            !projectName ? "opacity-40 cursor-not-allowed" : ""
+                            !projectDraft.name ? "opacity-40 cursor-not-allowed" : ""
                         }`}
                     >
                         Create Project
