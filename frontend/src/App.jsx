@@ -185,6 +185,9 @@ import ProjectBuilderPage from "./pages/ProjectBuilderPage";
 import Hmi from "./pages/Hmi";
 import Licence from "./pages/Licence";
 
+import {ProjectDraftProvider} from "./context/ProjectDraftContext.jsx";
+import Summary from "./pages/Summary.jsx";
+import Hardware from "./pages/Hardware.jsx";
 
 function App() {
   useEffect(() => {
@@ -194,14 +197,18 @@ function App() {
   }, []);
 
   return (
-    <Routes>
-      <Route path="/" element={<HomePage />} />
-      <Route path="/projects/new" element={<ProjectBuilderPage />} />
-      <Route path="/login" element={<Login />} />
-      <Route path="/register" element={<Register />} />
-      <Route path="/hmi" element={<Hmi />} />
-      <Route path="/licence" element={<Licence />} />
-    </Routes>
+    <ProjectDraftProvider>
+      <Routes>
+        <Route path="/" element={<HomePage />} />
+        <Route path="/projects/new" element={<ProjectBuilderPage />} />
+        <Route path="/login" element={<Login />} />
+        <Route path="/register" element={<Register />} />
+        <Route path="/hardware" element={<Hardware />} />
+        <Route path="/hmi" element={<Hmi />} />
+        <Route path="/licence" element={<Licence />} />
+        <Route path="/summary" element={<Summary />} />
+      </Routes>
+    </ProjectDraftProvider>
   );
 }
 

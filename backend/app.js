@@ -60,12 +60,16 @@ app.use((req, res, next) => {
 
 // Connect to MongoDB
 const seedHardware = require('./Seeder/hardwareSeeder');
+const seedLicenses = require('./Seeder/licenseSeeder');
+const seedIo = require('./Seeder/ioSeeder');
 
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/selection_tool_DB')
   .then(async () => {
     console.log('MongoDB connected');
     await seedHardware();
+    await seedLicenses();
+    await seedIo();
   })
   .catch((err) => console.log(err));
 
@@ -77,12 +81,14 @@ const ioRoutes = require('./routes/io');
 const hmiRoutes = require('./routes/hmi');
 const projectRoutes = require('./routes/project');
 const hardwareRoutes = require('./routes/hardware');
+const licenseRoutes = require('./routes/license');
 
 app.use('/auth', authRoutes);
 app.use('/io', ioRoutes);
 app.use('/hmi', hmiRoutes);
 app.use('/projects', projectRoutes);
 app.use('/hardware', hardwareRoutes);
+app.use('/license', licenseRoutes);
 
 // Catch anything thrown in async route handlers that wasn't already
 // caught locally, so the process doesn't crash on an unhandled rejection

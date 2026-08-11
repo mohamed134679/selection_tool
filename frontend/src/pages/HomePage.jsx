@@ -1,4 +1,5 @@
-import { Link } from 'react-router-dom'
+import { useState, useEffect } from 'react'
+import { Link, useLocation } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Plus, FolderOpen, LayoutGrid, Clock, ShieldCheck } from 'lucide-react'
 
@@ -10,8 +11,31 @@ const stats = [
 ]
 
 export default function HomePage() {
+  const location = useLocation()
+  const [showBanner, setShowBanner] = useState(!!location.state?.projectCreated)
+  const [fading, setFading] = useState(false)
+
+  useEffect(() => {
+    if (!showBanner) return
+    const fadeTimer = setTimeout(() => setFading(true), 2500)
+    const removeTimer = setTimeout(() => setShowBanner(false), 3000)
+    return () => {
+      clearTimeout(fadeTimer)
+      clearTimeout(removeTimer)
+    }
+  }, [])
+
   return (
     <div className="min-h-screen bg-white">
+      {showBanner && (
+        <div
+          className={`bg-green-50 text-green-800 text-sm text-center py-3 border-b border-green-200 transition-opacity duration-500 ${
+            fading ? "opacity-0" : "opacity-100"
+          }`}
+        >
+          Project created successfully.
+        </div>
+      )}
       {/* Navigation */}
       <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
         <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">

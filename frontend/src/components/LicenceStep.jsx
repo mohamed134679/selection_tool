@@ -1,75 +1,117 @@
-import { useState } from "react";
+import { useProjectDraft } from "../context/ProjectDraftContext";
 import { useSearchParams } from "react-router-dom";
 
 export default function LicenceStep({ onNext }) {
-const [wantsBuildTime, setWantsBuildTime] = useState(null);
-const [engineeringTier, setEngineeringTier] = useState(null);
-const [addons, setAddons] = useState([]);
+const { projectDraft, setProjectDraft } = useProjectDraft();
 const [searchParams, setSearchParams] = useSearchParams();
-const [ioPoints, setIoPoints] = useState("");
-const [nodeCount, setNodeCount] = useState("");
-const [protocols, setProtocols] = useState([]);
 const step = searchParams.get("step") || "yesno";
-const selectedHardware = { name: "M580 dPAC" }; // placeholder until HW selection page exists
 function toggleAddon(name) {
-  setAddons((prev) =>
-    prev.includes(name) ? prev.filter((a) => a !== name) : [...prev, name]
-  );
+  const current = projectDraft.licences.buildTime.addons;
+  const next = current.includes(name)
+    ? current.filter((a) => a !== name)
+    : [...current, name];
+  updateLicences("buildTime", { addons: next });
 }
 function toggleProtocol(name) {
-  setProtocols((prev) =>
-    prev.includes(name) ? prev.filter((p) => p !== name) : [...prev, name]
-  );
+  const current = projectDraft.licences.communication.protocols;
+  const next = current.includes(name)
+    ? current.filter((p) => p !== name)
+    : [...current, name];
+  updateLicences("communication", { protocols: next });
+}
+function updateLicences(section, updates){
+    setProjectDraft((prev) => ({
+        ...prev,
+        licences: {
+            ...prev.licences,
+            [section]: {
+                ...prev.licences[section],
+                ...updates
+            }
+        }
+    }));
 }
   if (step === "yesno") {
+    const wanted = projectDraft.licences.buildTime.wanted;
     return (
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Licences</h2>
         <p className="text-gray-600 mb-6">Do you need a Build Time (Engineering) licence?</p>
         <p className="text-sm text-gray-500 mb-6">Build Time licences are single-seat and perpetual.</p>
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           <div
-            onClick={() => {setWantsBuildTime(true);
-                           setSearchParams({ step: "tier" })}
-            }
-            className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
+            onClick={() => updateLicences("buildTime", { wanted: true })}
+            className={`rounded-2xl border p-6 cursor-pointer transition ${
+              wanted === true
+                ? "border-green-600 shadow-md bg-green-50"
+                : "border-gray-200 hover:border-green-600 hover:shadow-md"
+            }`}
           >
             <h3 className="text-lg font-semibold text-gray-900">Yes</h3>
           </div>
           <div
-            onClick={() => {setWantsBuildTime(false);
-                           setSearchParams({ step: "runtime" })}
-            }
-            className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
+            onClick={() => updateLicences("buildTime", { wanted: false })}
+            className={`rounded-2xl border p-6 cursor-pointer transition ${
+              wanted === false
+                ? "border-green-600 shadow-md bg-green-50"
+                : "border-gray-200 hover:border-green-600 hover:shadow-md"
+            }`}
           >
             <h3 className="text-lg font-semibold text-gray-900">No</h3>
           </div>
+        </div>
+        <div className="flex justify-end">
+          <button
+            disabled={wanted === null}
+            onClick={() => setSearchParams({ step: wanted ? "tier" : "orchestration" })}
+            className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
+              wanted === null ? "opacity-40 cursor-not-allowed" : ""
+            }`}
+          >
+            Next
+          </button>
         </div>
       </div>
     );
   }
   if (step === "tier") {
+  const tier = projectDraft.licences.buildTime.tier;
   return (
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Engineering Licence</h2>
       <p className="text-gray-600 mb-6">Choose a tier.</p>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         <div
-          onClick={() => {setEngineeringTier("Standard")
-                         setSearchParams({ step: "addons" })}
-          }
-          className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
+          onClick={() => updateLicences("buildTime", { tier: "Standard" })}
+          className={`rounded-2xl border p-6 cursor-pointer transition ${
+            tier === "Standard"
+              ? "border-green-600 shadow-md bg-green-50"
+              : "border-gray-200 hover:border-green-600 hover:shadow-md"
+          }`}
         >
           <h3 className="text-lg font-semibold text-gray-900">Standard</h3>
         </div>
         <div
-          onClick={() => {setEngineeringTier("Professional")
-                         setSearchParams({ step: "runtime" })}
-          }
-          className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
+          onClick={() => updateLicences("buildTime", { tier: "Professional" })}
+          className={`rounded-2xl border p-6 cursor-pointer transition ${
+            tier === "Professional"
+              ? "border-green-600 shadow-md bg-green-50"
+              : "border-gray-200 hover:border-green-600 hover:shadow-md"
+          }`}
         >
           <h3 className="text-lg font-semibold text-gray-900">Professional</h3>
         </div>
+      </div>
+      <div className="flex justify-end">
+        <button
+          disabled={tier === null}
+          onClick={() => setSearchParams({ step: tier === "Standard" ? "addons" : "orchestration" })}
+          className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
+            tier === null ? "opacity-40 cursor-not-allowed" : ""
+          }`}
+        >
+          Next
+        </button>
       </div>
     </div>
   );
@@ -79,12 +121,12 @@ if (step === "addons") {
         <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Add-ons</h2>
         <p className="text-gray-600 mb-6">Select any add-ons for your Standard licence (optional).</p>
-        <div className="flex flex-col gap-3 mb-6">
+        <div className="flex flex-col gap-3 mb-6">  
             {["High Availability", "Asset Link", "Procedural Libraries"].map((name) => (
             <label key={name} className="flex items-center gap-2 cursor-pointer">
                 <input
                 type="checkbox"
-                checked={addons.includes(name)}
+                checked={projectDraft.licences.buildTime.addons.includes(name)}
                 onChange={() => toggleAddon(name)}
                 />
                 {name}
@@ -92,7 +134,7 @@ if (step === "addons") {
             ))}
         </div>
         <button
-            onClick={() => setSearchParams({ step: "runtime" })}
+            onClick={() => setSearchParams({ step: "orchestration" })}
             className="rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700"
         >
             Continue
@@ -100,33 +142,8 @@ if (step === "addons") {
         </div>
   );
 }
-   if (step === "runtime"){
-    const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
-    return (
-        <div>
-            <h2 className="text-2xl font-bold text-gray-900 mb-2">Runtime Licence</h2>
-            <p className="text-gray-600 mb-2">Hardware: {selectedHardware.name}</p>
-            <p className="text-gray-600 mb-6">How many IO points does this hardware need?</p>
-            <input
-                type="number"
-                min="1"
-                max="5000"
-                value={ioPoints}
-                onChange={(e) => setIoPoints(e.target.value)}
-                className="border border-gray-300 rounded-lg px-3 py-2 w-48"
-                placeholder="e.g. 100"
-            />
-            <button
-                onClick={() => setSearchParams({ step: "orchestration" })}
-                disabled={!ioPointsValid}
-                className={`mt-6 ml-4 rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${!ioPointsValid ? "opacity-40 cursor-not-allowed" : ""}`}
-            >
-                Next
-            </button>
-        </div>
-    );
-}
     if (step === "orchestration") {
+        const nodeCount = projectDraft.licences.orchestration.nodeCount;
         const nodeCountValid = nodeCount && Number(nodeCount) >= 1 && Number(nodeCount) <= 500;
         return (
             <div>
@@ -136,8 +153,8 @@ if (step === "addons") {
                 type="number"
                 min="1"
                 max="500"
-                value={nodeCount}
-                onChange={(e) => setNodeCount(e.target.value)}
+                value={nodeCount || ""}
+                onChange={(e) => updateLicences("orchestration", { nodeCount: e.target.value })}
                 className="border border-gray-300 rounded-lg px-3 py-2 w-48"
                 placeholder="e.g. 10"
             />
@@ -167,7 +184,7 @@ if (step === "addons") {
                 <label key={name} className="flex items-center gap-2 cursor-pointer">
                     <input
                     type="checkbox"
-                    checked={protocols.includes(name)}
+                    checked={projectDraft.licences.communication.protocols.includes(name)}
                     onChange={() => toggleProtocol(name)}
                     />
                     {name}

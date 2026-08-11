@@ -9,9 +9,26 @@ const projectSchema = new mongoose.Schema({
   SelectedHw: [{
     hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
     quantity: { type: Number },
-    selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }]
+    selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
+    ioPoints: { type: Number }
   }],
-  Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' }
+  Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
+  licences: {
+    buildTime: {
+      wanted: { type: Boolean, default: false },
+      tier: { type: String, enum: ['Standard', 'Professional'] },
+      addons: [{ type: String, enum: ['High Availability', 'Asset Link', 'Procedural Libraries'] }]
+    },
+    runtime: {
+      ioPoints: { type: Number }
+    },
+    orchestration: {
+      nodeCount: { type: Number }
+    },
+    communication: {
+      protocols: [{ type: String, enum: ['Profinet', 'IEC 61850', 'OPC UA as a client'] }]
+    }
+  }
 });
 
 const Project = mongoose.model('Project', projectSchema);

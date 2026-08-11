@@ -16,7 +16,7 @@ router.post('/', async (req, res) => {
 
 router.get('/', async (req, res) => {
     try {
-        const ioList = await Io.find().populate('license');
+        const ioList = await Io.find();
         res.json(ioList);
     } catch (err) {
         res.status(500).json({ message: err.message });

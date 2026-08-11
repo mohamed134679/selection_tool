@@ -20,6 +20,14 @@ const hardwareSchema = new mongoose.Schema({
     type: String
   },
 
+  description: {
+    type: String
+  },
+
+  tags: [{
+    type: String
+  }],
+
   compatible_io: [{
     type: mongoose.Schema.Types.ObjectId,
     ref: 'Io'

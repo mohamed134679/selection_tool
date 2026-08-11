@@ -1,11 +1,14 @@
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
-
+import {useSearchParams} from "react-router-dom";
 
 export default function HmiStep({ selectedId, onSelect, onNext }) {
   const [hmiOptions, setHmiOptions] = useState([]);
   const [error, setError] = useState(null);
-  const [brand,setBrand] = useState(null);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const step = searchParams.get("step") || "brand";
+  const brand = searchParams.get("brand");
+
   useEffect(() => {
     // your turn: fetch from http://localhost:3000/hmi,
     // parse the JSON, and setHmiOptions with the result
@@ -19,20 +22,20 @@ export default function HmiStep({ selectedId, onSelect, onNext }) {
       .then((data) => setHmiOptions(data))
       .catch((err) => setError(err.message));
   }, []);
-  if (!brand) {
+  if (step === "brand") {
     return (
       <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose HMI</h2>
         <p className="text-gray-600 mb-6">First, choose the HMI category.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
           <div
-            onClick={() => setBrand("Schneider")}
+            onClick={() => setSearchParams({ step: "select", brand: "Schneider"})}
             className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
           >
             <h3 className="text-lg font-semibold text-gray-900">Schneider HMI</h3>
           </div>
           <div
-            onClick={() => setBrand("Third-Party")}
+            onClick={() => setSearchParams({ step: "select", brand: "Third-Party" })}
             className="rounded-2xl border border-gray-200 p-6 cursor-pointer hover:border-green-600 hover:shadow-md transition"
           >
             <h3 className="text-lg font-semibold text-gray-900">Third-Party HMI</h3>
@@ -47,7 +50,8 @@ export default function HmiStep({ selectedId, onSelect, onNext }) {
   <div>
     <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose HMI</h2>
     <p className="text-gray-600 mb-6">Select the visualization deployment for this project.</p>
-    <button onClick={() => setBrand(null)} className="text-sm text-green-700 hover:underline mb-4">
+    <button onClick={() => {setSearchParams({ step: "brand" })
+    }}className="text-sm text-green-700 hover:underline mb-4">
       ← Change category
     </button>
     {error && (
