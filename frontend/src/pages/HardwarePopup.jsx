@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 
 export default function HardwarePopup({ hw, onApply, onClose }) {
   const [ioOptions, setIoOptions] = useState([]);
-  const [selectedIoIds, setSelectedIoIds] = useState([]);
+  const [selectedIoId, setSelectedIoId] = useState(null);
   const [ioPoints, setIoPoints] = useState("");
 
   useEffect(() => {
@@ -13,28 +13,28 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
       .catch(() => {});
   }, []);
 
-  function toggleIo(id) {
-    setSelectedIoIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id]
-    );
-  }
+  const compatibleIo = ioOptions.filter((io) => hw.compatible_io?.includes(io._id));
 
   const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
-  const canApply = ioPointsValid && selectedIoIds.length > 0;
+  const canApply = ioPointsValid && !!selectedIoId;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} — IO Setup</h3>
 
-        <p className="text-sm text-gray-600 mb-2">Choose IO modules:</p>
+        <p className="text-sm text-gray-600 mb-2">Choose an IO module:</p>
         <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
-          {ioOptions.map((io) => (
+          {compatibleIo.length === 0 && (
+            <p className="text-sm text-gray-500">No compatible IO modules found.</p>
+          )}
+          {compatibleIo.map((io) => (
             <label key={io._id} className="flex items-center gap-2 cursor-pointer">
               <input
-                type="checkbox"
-                checked={selectedIoIds.includes(io._id)}
-                onChange={() => toggleIo(io._id)}
+                type="radio"
+                name="io-module"
+                checked={selectedIoId === io._id}
+                onChange={() => setSelectedIoId(io._id)}
               />
               {io.Name}
             </label>
@@ -58,7 +58,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
           </button>
           <Button
             disabled={!canApply}
-            onClick={() => onApply(selectedIoIds, Number(ioPoints))}
+            onClick={() => onApply([selectedIoId], Number(ioPoints))}
             className={!canApply ? "opacity-40 cursor-not-allowed" : ""}
           >
             Apply
