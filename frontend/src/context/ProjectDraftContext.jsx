@@ -6,6 +6,8 @@ export const ProjectDraftProvider = ({ children }) => {
   const [projectDraft, setProjectDraft] = useState({
     name: "",
     description: "",
+    locked: false,
+    justCreated: false,
     selectedHw: [],
     hmiId: null,
     licences: {

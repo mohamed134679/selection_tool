@@ -1,9 +1,10 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
+import LockedOverlay from "../components/LockedOverlay.jsx";
 
 export default function Summary() {
-    const { projectDraft } = useProjectDraft();
+    const { projectDraft, setProjectDraft } = useProjectDraft();
     const navigate = useNavigate();
     const [hmiOptions,setHmiOptions] = useState([]);
     const [licenseCatalog, setLicenseCatalog] = useState([]);
@@ -29,6 +30,11 @@ export default function Summary() {
         .then(setLicenseCatalog)
         .catch(() => {})
     }, []);
+
+    if (projectDraft.locked) {
+        return <LockedOverlay />;
+    }
+
     function getControlPackName(ioPoints) {
         if (!ioPoints) return null;
         const packs = [10, 100, 1000, 5000];
@@ -60,7 +66,8 @@ export default function Summary() {
                 throw new Error(body.message || "Failed to create project");
             }
             setSaved(true);
-            navigate("/", { state: { projectCreated: true } });
+            setProjectDraft((prev) => ({ ...prev, locked: true, justCreated: true }));
+            navigate("/", { replace: true });
         } catch (err) {
             setSaveError(err.message);
         }

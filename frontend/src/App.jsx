@@ -172,7 +172,7 @@
 // }
 
 
-import { Routes, Route } from "react-router-dom";
+import { Routes, Route, Navigate, useLocation } from "react-router-dom";
 import "./styles.css";
 import { useEffect } from "react";
 
@@ -185,9 +185,36 @@ import ProjectBuilderPage from "./pages/ProjectBuilderPage";
 import Hmi from "./pages/Hmi";
 import Licence from "./pages/Licence";
 
-import {ProjectDraftProvider} from "./context/ProjectDraftContext.jsx";
+import {ProjectDraftProvider, useProjectDraft} from "./context/ProjectDraftContext.jsx";
 import Summary from "./pages/Summary.jsx";
 import Hardware from "./pages/Hardware.jsx";
+
+// Runs INSIDE ProjectDraftProvider so it can read `locked`. If a project
+// was already created, every route except "/" immediately redirects home —
+// this is checked on every render (including ones triggered by the
+// browser's Back/Forward buttons), so it can't be defeated by repeatedly
+// pressing Back, unlike trying to intercept the popstate event by hand.
+function AppRoutes() {
+  const { projectDraft } = useProjectDraft();
+  const location = useLocation();
+
+  if (projectDraft.locked && location.pathname !== "/") {
+    return <Navigate to="/" replace />;
+  }
+
+  return (
+    <Routes>
+      <Route path="/" element={<HomePage />} />
+      <Route path="/projects/new" element={<ProjectBuilderPage />} />
+      <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
+      <Route path="/hardware" element={<Hardware />} />
+      <Route path="/hmi" element={<Hmi />} />
+      <Route path="/licence" element={<Licence />} />
+      <Route path="/summary" element={<Summary />} />
+    </Routes>
+  );
+}
 
 function App() {
   useEffect(() => {
@@ -198,16 +225,7 @@ function App() {
 
   return (
     <ProjectDraftProvider>
-      <Routes>
-        <Route path="/" element={<HomePage />} />
-        <Route path="/projects/new" element={<ProjectBuilderPage />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/hardware" element={<Hardware />} />
-        <Route path="/hmi" element={<Hmi />} />
-        <Route path="/licence" element={<Licence />} />
-        <Route path="/summary" element={<Summary />} />
-      </Routes>
+      <AppRoutes />
     </ProjectDraftProvider>
   );
 }

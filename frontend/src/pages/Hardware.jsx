@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { useNavigate } from "react-router-dom";
 import { useSearchParams } from "react-router-dom";
 import HardwarePopup from "./HardwarePopup.jsx";
+import LockedOverlay from "../components/LockedOverlay.jsx";
 
 export default function Hardware() {
   const { projectDraft, setProjectDraft } = useProjectDraft();
@@ -40,6 +41,10 @@ function removeOneUnit(hwId) {
     next.splice(idx, 1);
     return { ...prev, selectedHw: next };
   });
+}
+
+if (projectDraft.locked) {
+  return <LockedOverlay />;
 }
 
 if(!category) {

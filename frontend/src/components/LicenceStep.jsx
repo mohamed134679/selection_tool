@@ -1,10 +1,16 @@
 import { useProjectDraft } from "../context/ProjectDraftContext";
 import { useSearchParams } from "react-router-dom";
+import LockedOverlay from "./LockedOverlay.jsx";
 
 export default function LicenceStep({ onNext }) {
 const { projectDraft, setProjectDraft } = useProjectDraft();
 const [searchParams, setSearchParams] = useSearchParams();
 const step = searchParams.get("step") || "yesno";
+
+if (projectDraft.locked) {
+  return <LockedOverlay />;
+}
+
 function toggleAddon(name) {
   const current = projectDraft.licences.buildTime.addons;
   const next = current.includes(name)

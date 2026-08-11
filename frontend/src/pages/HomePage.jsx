@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react'
-import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Plus, FolderOpen, LayoutGrid, Clock, ShieldCheck } from 'lucide-react'
 import { useProjectDraft } from '../context/ProjectDraftContext.jsx'
@@ -12,10 +12,9 @@ const stats = [
 ]
 
 export default function HomePage() {
-  const location = useLocation()
   const navigate = useNavigate()
-  const { setProjectDraft } = useProjectDraft()
-  const [showBanner, setShowBanner] = useState(!!location.state?.projectCreated)
+  const { projectDraft, setProjectDraft } = useProjectDraft()
+  const [showBanner, setShowBanner] = useState(false)
   const [fading, setFading] = useState(false)
   const [showCreatePopup, setShowCreatePopup] = useState(false)
   const [name, setName] = useState('')
@@ -26,6 +25,16 @@ export default function HomePage() {
     navigate('/hardware')
   }
 
+  // One-shot: show the banner if we just created a project, then clear the
+  // flag so it doesn't reappear on later re-renders of this same mounted
+  // instance (e.g. every trapped Back-button attempt re-renders HomePage
+  // without unmounting it, since we're already on "/").
+  useEffect(() => {
+    if (!projectDraft.justCreated) return
+    setShowBanner(true)
+    setProjectDraft((prev) => ({ ...prev, justCreated: false }))
+  }, [])
+
   useEffect(() => {
     if (!showBanner) return
     const fadeTimer = setTimeout(() => setFading(true), 2500)
@@ -34,7 +43,7 @@ export default function HomePage() {
       clearTimeout(fadeTimer)
       clearTimeout(removeTimer)
     }
-  }, [])
+  }, [showBanner])
 
   return (
     <div className="min-h-screen bg-white">
