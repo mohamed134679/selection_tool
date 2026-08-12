@@ -1,5 +1,4 @@
 import { useEffect, useState } from "react";
-import { Button } from "@/components/ui/button";
 import {useSearchParams} from "react-router-dom";
 
 export default function HmiStep({ selectedId, onSelect, onNext }) {
@@ -10,8 +9,6 @@ export default function HmiStep({ selectedId, onSelect, onNext }) {
   const brand = searchParams.get("brand");
 
   useEffect(() => {
-    // your turn: fetch from http://localhost:3000/hmi,
-    // parse the JSON, and setHmiOptions with the result
     fetch("http://localhost:3000/hmi")
       .then((response) => {
         if (!response.ok) {
@@ -70,11 +67,8 @@ export default function HmiStep({ selectedId, onSelect, onNext }) {
                 : "border-gray-200 hover:border-green-600 hover:shadow-md"
             }`}
             onClick={() => {
-              if (selectedId !== hmi._id) {
-                onSelect(hmi._id);
-              }else {
-                onSelect(null);
-              }
+              onSelect(hmi._id);
+              onNext();
             }}
           >
             {hmi.image && (
@@ -85,15 +79,6 @@ export default function HmiStep({ selectedId, onSelect, onNext }) {
         ))
       }
     </div>
-        <div className="flex justify-end">
-          <Button
-            disabled={!selectedId}
-            onClick={onNext}
-            className={!selectedId ? "opacity-40 cursor-not-allowed" : ""}
-          >
-            Next
-          </Button>
-        </div>
   </div>
 );
 

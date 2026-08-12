@@ -11,7 +11,6 @@ export default function Hardware() {
   const [hardwareOptions, setHardwareOptions] = useState([]);
   const [popupHw, setPopupHw] = useState(null);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [pendingCategory, setPendingCategory] = useState(null);
   const category = searchParams.get("category");
   const navigate = useNavigate();
 
@@ -53,25 +52,17 @@ if(!category) {
             <h1 className="text-2xl font-bold text-gray-900 mb-6">Choose Hardware Category</h1>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                 <div
-                    onClick={() => setPendingCategory("SoftdPAC")}
-                    className={`rounded-2xl border p-6 cursor-pointer trasition ${pendingCategory === "SoftdPAC" ? "border-green-600 shadow-md" : "border-gray-200 hover:border-green-600 hover:shadow-md"}`}
+                    onClick={() => setSearchParams({ category: "SoftdPAC" })}
+                    className="rounded-2xl border p-6 cursor-pointer trasition border-gray-200 hover:border-green-600 hover:shadow-md"
                 >
                     <h3 className="text-lg font-semibold text-gray-900">SoftdPAC</h3>
                 </div>
                 <div
-                    onClick={() => setPendingCategory("IEC61499")}
-                    className={`rounded-2xl border p-6 cursor-pointer trasition ${pendingCategory === "IEC61499" ? "border-green-600 shadow-md" : "border-gray-200 hover:border-green-600 hover:shadow-md"}`}
+                    onClick={() => setSearchParams({ category: "IEC61499" })}
+                    className="rounded-2xl border p-6 cursor-pointer trasition border-gray-200 hover:border-green-600 hover:shadow-md"
                 >
                     <h3 className="text-lg font-semibold text-gray-900">IEC61499</h3>
                 </div>
-            </div>
-            <div className="flex justify-end mt-8">
-                <Button
-                    disabled={!pendingCategory}
-                    onClick={() => setSearchParams({ category: pendingCategory })}
-                >
-                    Next
-                </Button>
             </div>
         </div>
     );

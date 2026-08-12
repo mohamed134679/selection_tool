@@ -46,7 +46,10 @@ function updateLicences(section, updates){
         <p className="text-sm text-gray-500 mb-6">Build Time licences are single-seat and perpetual.</p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           <div
-            onClick={() => updateLicences("buildTime", { wanted: true })}
+            onClick={() => {
+              updateLicences("buildTime", { wanted: true });
+              setSearchParams({ step: "tier" });
+            }}
             className={`rounded-2xl border p-6 cursor-pointer transition ${
               wanted === true
                 ? "border-green-600 shadow-md bg-green-50"
@@ -56,7 +59,10 @@ function updateLicences(section, updates){
             <h3 className="text-lg font-semibold text-gray-900">Yes</h3>
           </div>
           <div
-            onClick={() => updateLicences("buildTime", { wanted: false })}
+            onClick={() => {
+              updateLicences("buildTime", { wanted: false });
+              setSearchParams({ step: "orchestration" });
+            }}
             className={`rounded-2xl border p-6 cursor-pointer transition ${
               wanted === false
                 ? "border-green-600 shadow-md bg-green-50"
@@ -65,17 +71,6 @@ function updateLicences(section, updates){
           >
             <h3 className="text-lg font-semibold text-gray-900">No</h3>
           </div>
-        </div>
-        <div className="flex justify-end">
-          <button
-            disabled={wanted === null}
-            onClick={() => setSearchParams({ step: wanted ? "tier" : "orchestration" })}
-            className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
-              wanted === null ? "opacity-40 cursor-not-allowed" : ""
-            }`}
-          >
-            Next
-          </button>
         </div>
       </div>
     );
@@ -88,7 +83,10 @@ function updateLicences(section, updates){
       <p className="text-gray-600 mb-6">Choose a tier.</p>
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         <div
-          onClick={() => updateLicences("buildTime", { tier: "Standard" })}
+          onClick={() => {
+            updateLicences("buildTime", { tier: "Standard" });
+            setSearchParams({ step: "addons" });
+          }}
           className={`rounded-2xl border p-6 cursor-pointer transition ${
             tier === "Standard"
               ? "border-green-600 shadow-md bg-green-50"
@@ -98,7 +96,10 @@ function updateLicences(section, updates){
           <h3 className="text-lg font-semibold text-gray-900">Standard</h3>
         </div>
         <div
-          onClick={() => updateLicences("buildTime", { tier: "Professional" })}
+          onClick={() => {
+            updateLicences("buildTime", { tier: "Professional" });
+            setSearchParams({ step: "orchestration" });
+          }}
           className={`rounded-2xl border p-6 cursor-pointer transition ${
             tier === "Professional"
               ? "border-green-600 shadow-md bg-green-50"
@@ -107,17 +108,6 @@ function updateLicences(section, updates){
         >
           <h3 className="text-lg font-semibold text-gray-900">Professional</h3>
         </div>
-      </div>
-      <div className="flex justify-end">
-        <button
-          disabled={tier === null}
-          onClick={() => setSearchParams({ step: tier === "Standard" ? "addons" : "orchestration" })}
-          className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
-            tier === null ? "opacity-40 cursor-not-allowed" : ""
-          }`}
-        >
-          Next
-        </button>
       </div>
     </div>
   );
@@ -207,5 +197,3 @@ if (step === "addons") {
         );
     }
 }
-
-
