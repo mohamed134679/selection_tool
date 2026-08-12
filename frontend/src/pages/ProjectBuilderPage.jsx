@@ -1,5 +1,4 @@
 import { useEffect, useMemo, useState } from "react";
-import { Link } from "react-router-dom";
 import StackHeader from "../components/StackHeader.jsx";
 import StepLayer from "../components/StepLayer.jsx";
 import ResultPanel from "../components/ResultPanel.jsx";
@@ -88,37 +87,6 @@ export default function ProjectBuilderPage() {
 
   return (
     <div className="min-h-screen bg-white">
-      <nav className="sticky top-0 z-50 border-b border-gray-200 bg-white/80 backdrop-blur-md">
-        <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-green-600 to-green-800 rounded-lg flex items-center justify-center">
-                <span className="text-white font-bold text-sm">SE</span>
-              </div>
-              <span className="font-bold text-lg text-gray-900">EAE Architecture Builder</span>
-            </div>
-
-            <div className="flex items-center gap-3">
-              <Link to="/login">
-                <button type="button" className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium">
-                  Login
-                </button>
-              </Link>
-
-              <Link to="/register">
-                <button type="button" className="inline-flex items-center justify-center rounded-lg px-3 py-2 text-sm font-medium">
-                  Register
-                </button>
-              </Link>
-
-              <div className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-sm">
-                B
-              </div>
-            </div>
-          </div>
-        </div>
-      </nav>
-
       <main className="mx-auto max-w-5xl px-4 sm:px-6 lg:px-8 py-16">
         <div className="mb-12">
           <h1 className="text-3xl font-bold text-gray-900 mb-2">Create New Project</h1>

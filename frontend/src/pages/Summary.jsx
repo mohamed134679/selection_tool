@@ -67,7 +67,7 @@ export default function Summary() {
             }
             setSaved(true);
             setProjectDraft((prev) => ({ ...prev, locked: true, justCreated: true }));
-            navigate("/", { replace: true });
+            navigate("/home", { replace: true });
         } catch (err) {
             setSaveError(err.message);
         }

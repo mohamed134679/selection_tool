@@ -17,8 +17,9 @@ export default function LoginPage() {
     apiLogin(username, password)
       .then((data) => {
         localStorage.setItem('accessToken', data.accessToken)
+        localStorage.setItem('appUsername', username)
         setLoading(false)
-        navigate('/')
+        navigate('/home')
       })
       .catch((err) => {
         setLoading(false)
@@ -43,7 +44,7 @@ export default function LoginPage() {
           </h1>
           <p className="text-lg opacity-90 mb-12 max-w-md">
             Select controllers, I/O, HMI, and licensing for EcoStruxure Automation Expert
-            deployments — guided by validated Schneider Electric selection best practices.
+            deployments, guided by validated Schneider Electric selection.
           </p>
 
           <div className="space-y-4">
@@ -79,7 +80,7 @@ export default function LoginPage() {
           </div>
 
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Welcome Back</h2>
-          <p className="text-gray-600 mb-8">Sign in with your Schneider Electric account or partner credentials to continue.</p>
+          <p className="text-gray-600 mb-8">Sign in with your Schneider Electric account or Certified Partner account.</p>
 
 
           <form onSubmit={handleSubmit} className="space-y-6">
@@ -147,9 +148,9 @@ export default function LoginPage() {
 
           {/* Sign Up Link */}
           <p className="mt-8 text-center text-gray-600">
-            Certified partner without an account?{' '}
+            Don't have an account?{' '}
             <a href="/register" className="text-green-600 hover:text-green-700 font-semibold">
-              Request access
+              Create one
             </a>
           </p>
         </div>

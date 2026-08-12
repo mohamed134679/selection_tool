@@ -188,6 +188,7 @@ import Licence from "./pages/Licence";
 import {ProjectDraftProvider, useProjectDraft} from "./context/ProjectDraftContext.jsx";
 import Summary from "./pages/Summary.jsx";
 import Hardware from "./pages/Hardware.jsx";
+import SiteHeader from "./components/SiteHeader.jsx";
 
 // Runs INSIDE ProjectDraftProvider so it can read `locked`. If a project
 // was already created, every route except "/" immediately redirects home —
@@ -198,13 +199,14 @@ function AppRoutes() {
   const { projectDraft } = useProjectDraft();
   const location = useLocation();
 
-  if (projectDraft.locked && location.pathname !== "/") {
-    return <Navigate to="/" replace />;
+  if (projectDraft.locked && location.pathname !== "/home") {
+    return <Navigate to="/home" replace />;
   }
 
   return (
     <Routes>
-      <Route path="/" element={<HomePage />} />
+      <Route path="/" element={<Login />} />
+      <Route path="/home" element={<HomePage />} />
       <Route path="/projects/new" element={<ProjectBuilderPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
@@ -216,6 +218,18 @@ function AppRoutes() {
   );
 }
 
+function AppShell() {
+  const location = useLocation();
+  const hideHeader = location.pathname === "/" || location.pathname === "/login" || location.pathname === "/register";
+
+  return (
+    <ProjectDraftProvider>
+      {!hideHeader && <SiteHeader />}
+      <AppRoutes />
+    </ProjectDraftProvider>
+  );
+}
+
 function App() {
   useEffect(() => {
     // enable the app theme by default; pages can override it
@@ -224,9 +238,7 @@ function App() {
   }, []);
 
   return (
-    <ProjectDraftProvider>
-      <AppRoutes />
-    </ProjectDraftProvider>
+    <AppShell />
   );
 }
 

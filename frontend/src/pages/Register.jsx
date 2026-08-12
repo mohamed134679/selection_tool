@@ -41,7 +41,8 @@ export default function RegisterPage() {
         setLoading(false)
         // store accessToken if returned
         if (data.accessToken) localStorage.setItem('accessToken', data.accessToken)
-        navigate('/')
+        if (formData.username) localStorage.setItem('appUsername', formData.username)
+        navigate('/home')
       })
       .catch((err) => {
         setLoading(false)
