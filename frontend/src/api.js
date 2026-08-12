@@ -25,6 +25,12 @@ export async function postRecommend(payload) {
   return res.json();
 }
 
+export async function getProjectCount() {
+  const res = await fetch(`${BASE}/projects/count`)
+  if (!res.ok) throw new Error('Failed to load project count')
+  return res.json()
+}
+
 export async function login(username, password) {
   const res = await fetch(`${BASE}/auth/login`, {
     method: 'POST',

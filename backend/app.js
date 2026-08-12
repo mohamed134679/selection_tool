@@ -62,6 +62,7 @@ app.use((req, res, next) => {
 const seedHardware = require('./Seeder/hardwareSeeder');
 const seedLicenses = require('./Seeder/licenseSeeder');
 const seedIo = require('./Seeder/ioSeeder');
+const seedHmi = require('./Seeder/hmiSeeder');
 
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/selection_tool_DB')
@@ -70,6 +71,7 @@ mongoose
     await seedHardware();
     await seedLicenses();
     await seedIo();
+    await seedHmi();
   })
   .catch((err) => console.log(err));
 

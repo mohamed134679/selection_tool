@@ -3,6 +3,16 @@ const router = express.Router();
 
 const Project = require('../schemas/projects_schema');
 
+// Get the total number of projects
+router.get('/count', async (req, res) => {
+    try {
+        const total = await Project.countDocuments();
+        res.json({ total });
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 // Create a new project
 router.post('/', async (req, res) => {
     try {

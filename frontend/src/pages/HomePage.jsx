@@ -2,11 +2,11 @@ import { useState, useEffect } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { Button } from '@/components/ui/button'
 import { Plus, FolderOpen, LayoutGrid, Clock, ShieldCheck } from 'lucide-react'
+import { getProjectCount } from '../api.js'
 import { useProjectDraft } from '../context/ProjectDraftContext.jsx'
 
-// Mock data — replace with real values once the backend/project API is wired up
-const stats = [
-  { icon: LayoutGrid, label: 'Total Projects', value: 12 },
+const initialStats = [
+  { icon: LayoutGrid, label: 'Total Projects', value: 0 },
   { icon: Clock, label: 'In Progress', value: 4 },
   { icon: ShieldCheck, label: 'Needs Review', value: 2 },
 ]
@@ -19,6 +19,7 @@ export default function HomePage() {
   const [showCreatePopup, setShowCreatePopup] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
+  const [stats, setStats] = useState(initialStats)
 
   function startProject() {
     setProjectDraft((prev) => ({ ...prev, name, description }))
@@ -44,6 +45,30 @@ export default function HomePage() {
       clearTimeout(removeTimer)
     }
   }, [showBanner])
+
+  useEffect(() => {
+    let active = true
+
+    async function loadProjectCount() {
+      try {
+        const data = await getProjectCount()
+        if (!active) return
+        setStats((prev) =>
+          prev.map((stat) =>
+            stat.label === 'Total Projects' ? { ...stat, value: data.total ?? 0 } : stat
+          )
+        )
+      } catch (err) {
+        console.error(err)
+      }
+    }
+
+    loadProjectCount()
+
+    return () => {
+      active = false
+    }
+  }, [])
 
   return (
     <div className="min-h-screen bg-white">

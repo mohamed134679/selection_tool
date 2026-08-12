@@ -7,5 +7,5 @@ const HmiSchema = new mongoose.Schema({
   brand: {type: String, required: true, enum: ['Schneider','Third-Party']},
   license: { type: mongoose.Schema.Types.ObjectId, ref: 'License' }
 });
-const Hmi = mongoose.model('Hmi', HmiSchema);
+const Hmi = mongoose.models.Hmi || mongoose.model('Hmi', HmiSchema);
 module.exports = Hmi;
