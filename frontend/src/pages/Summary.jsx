@@ -55,7 +55,7 @@ export default function Summary() {
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({
                     name: projectDraft.name,
-                    createdBy: localStorage.getItem("appUsername"),
+                    createdBy: localStorage.getItem("userId"),
                     description: projectDraft.description,
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
