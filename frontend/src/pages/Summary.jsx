@@ -109,12 +109,13 @@ if (projectDraft.licences.buildTime.wanted) {
   });
 }
 
-const totalIoPoints = projectDraft.selectedHw.reduce(
-  (sum, entry) => sum + (Number(entry.ioPoints) || 0) * (entry.quantity || 1),
-  0
-);
-const controlPack = getControlPackName(totalIoPoints);
-if (controlPack) requiredLicenseNames.push(controlPack);
+// One Control Pack license per hardware unit, based on THAT unit's own IO
+// points — not a single pack computed from every hardware unit's points
+// added together, since each controller is licensed independently.
+projectDraft.selectedHw.forEach((entry) => {
+  const controlPack = getControlPackName(entry.ioPoints);
+  if (controlPack) requiredLicenseNames.push(controlPack);
+});
 
 const orchestrationPack = getOrchestrationPackName(projectDraft.licences.orchestration.nodeCount);
 if (orchestrationPack) requiredLicenseNames.push(orchestrationPack);
@@ -123,16 +124,27 @@ projectDraft.licences.communication.protocols.forEach((protocol) => {
   requiredLicenseNames.push(protocolLicenseNames[protocol]);
 });
 
-const requiredLicenses = requiredLicenseNames
-  .map((name) => licenseCatalog.find((lic) => lic.name === name))
-  .filter(Boolean);
+const selectedHmi = hmiOptions.find(hmi => hmi._id === projectDraft.hmiId);
+const hmiLicense = selectedHmi?.license
+    ? licenseCatalog.find((lic) => lic._id === selectedHmi.license)
+    : null;
+if (hmiLicense) requiredLicenseNames.push(hmiLicense.name);
 
-    const selectedHmi = hmiOptions.find(hmi => hmi._id === projectDraft.hmiId);
-    
-    const hmiLicense = selectedHmi?.license
-        ? licenseCatalog.find((lic) => lic._id === selectedHmi.license)
-        : null;
-    if (hmiLicense) requiredLicenses.push(hmiLicense);
+// Multiple hardware units can need the same license (e.g. two controllers
+// both needing "Control Pack 100 IO Points") — count occurrences instead of
+// pushing duplicate entries, so the list shows "x2" rather than two rows
+// with the same React key.
+const licenseNameCounts = {};
+requiredLicenseNames.forEach((name) => {
+  licenseNameCounts[name] = (licenseNameCounts[name] || 0) + 1;
+});
+
+const requiredLicenses = Object.entries(licenseNameCounts)
+  .map(([name, count]) => {
+    const lic = licenseCatalog.find((l) => l.name === name);
+    return lic ? { ...lic, count } : null;
+  })
+  .filter(Boolean);
 
     const hwCounts = {};
         projectDraft.selectedHw.forEach((entry) => {
@@ -155,7 +167,11 @@ const requiredLicenses = requiredLicenseNames
                         }`
                         : "Not needed"}
                 </p>
-                <p>Runtime IO Points: {totalIoPoints || "—"}</p>
+                <p>
+                    Runtime IO Points: {projectDraft.selectedHw.length > 0
+                        ? projectDraft.selectedHw.map((entry) => entry.ioPoints || "—").join(", ")
+                        : "—"}
+                </p>
                 <p>Orchestration Nodes: {projectDraft.licences.orchestration.nodeCount || "—"}</p>
                 <p>
                     Communication Protocols: {projectDraft.licences.communication.protocols.length > 0
@@ -184,7 +200,7 @@ const requiredLicenses = requiredLicenseNames
                     <ul className="list-disc list-inside">
                         {requiredLicenses.map((lic) => (
                             <li key={lic._id}>
-                                {lic.name} ({lic.reference_no})
+                                {lic.name} ({lic.reference_no}){lic.count > 1 ? ` x${lic.count}` : ""}
                             </li>
                         ))}
                     </ul>

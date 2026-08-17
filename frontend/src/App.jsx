@@ -19,15 +19,18 @@ import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
 
 // Runs INSIDE ProjectDraftProvider so it can read `locked`. If a project
-// was already created, every route except "/" immediately redirects home —
-// this is checked on every render (including ones triggered by the
-// browser's Back/Forward buttons), so it can't be defeated by repeatedly
-// pressing Back, unlike trying to intercept the popstate event by hand.
+// was already created, the abandoned Hardware/HMI/Licence/Summary flow
+// specifically becomes unreachable — this is checked on every render
+// (including ones triggered by the browser's Back/Forward buttons), so it
+// can't be defeated by repeatedly pressing Back. Everything else (View
+// Projects, Login, Register, etc.) stays fully navigable.
+const LOCKED_FLOW_PATHS = ["/hardware", "/hmi", "/licence", "/summary"];
+
 function AppRoutes() {
   const { projectDraft } = useProjectDraft();
   const location = useLocation();
 
-  if (projectDraft.locked && location.pathname !== "/home") {
+  if (projectDraft.locked && LOCKED_FLOW_PATHS.includes(location.pathname)) {
     return <Navigate to="/home" replace />;
   }
 
