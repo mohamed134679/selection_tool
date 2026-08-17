@@ -16,6 +16,15 @@ export default function RegisterPage() {
     confirmPassword: '',
     agreeToTerms: false,
   })
+  const passwordChecks = {
+    length: formData.password.length>=8,
+    uppercase: /[A-Z]/.test(formData.password),
+    lowercase: /[a-z]/.test(formData.password),
+    number: /\d/.test(formData.password)
+  }
+  const passwordValid = Object.values(passwordChecks).every(Boolean)
+  const passwordsMatch = formData.confirmPassword.length > 0 && formData.password === formData.confirmPassword
+  const [formError, setFormError] = useState('')
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
@@ -29,6 +38,15 @@ export default function RegisterPage() {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    if (!passwordValid) {
+      setFormError('Your password does not meet the requirements above.')
+      return
+    }
+    if (!passwordsMatch) {
+      setFormError('Passwords do not match.')
+      return
+    }
+    setFormError(null)
     setLoading(true)
     const payload = {
       username: formData.username,
@@ -42,11 +60,11 @@ export default function RegisterPage() {
         // store accessToken if returned
         if (data.accessToken) localStorage.setItem('accessToken', data.accessToken)
         if (formData.username) localStorage.setItem('appUsername', formData.username)
-        navigate('/home')
+        navigate('/login')
       })
       .catch((err) => {
         setLoading(false)
-        alert(err.message || 'Registration failed')
+        setFormError(err.message || 'Registration failed')
       })
   }
 
@@ -101,7 +119,11 @@ export default function RegisterPage() {
           <h2 className="text-3xl font-bold text-gray-900 mb-2">Request Access</h2>
           <p className="text-gray-600 mb-8">For Schneider Electric employees and certified partners only.</p>
 
-        
+          {formError && (
+            <p className="text-sm text-red-700 bg-red-50 border-l-2 border-red-500 rounded-r-md px-3 py-2 mb-6">
+              {formError}
+            </p>
+          )}
 
           <form onSubmit={handleSubmit} className="space-y-5">
             {/* Account Type */}
@@ -213,7 +235,24 @@ export default function RegisterPage() {
                   )}
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-2">At least 8 characters with uppercase, lowercase, and numbers</p>
+                  <ul className="mt-2 space-y-1">
+                    {[
+                      { key: 'length', label: 'At least 8 characters' },
+                      { key: 'uppercase', label: 'One uppercase letter' },
+                      { key: 'lowercase', label: 'One lowercase letter' },
+                      { key: 'number', label: 'One number' },
+                    ].map((rule) => (
+                      <li
+                        key={rule.key}
+                        className={`text-xs flex items-center gap-1.5 ${
+                          passwordChecks[rule.key] ? 'text-green-600' : 'text-gray-500'
+                        }`}
+                      >
+                        <span>{passwordChecks[rule.key] ? '✓' : '○'}</span>
+                        {rule.label}
+                      </li>
+                    ))}
+                  </ul>
             </div>
 
             {/* Confirm Password Input */}
@@ -243,6 +282,11 @@ export default function RegisterPage() {
                 </button>
               </div>
             </div>
+            {formData.confirmPassword.length > 0 && (
+              <p className={`text-xs ${passwordsMatch ? 'text-green-600' : 'text-red-600'}`}>
+                {passwordsMatch ? 'Passwords match' : 'Passwords do not match'}
+              </p>
+            )}
 
             {/* Terms Checkbox */}
             <label className="flex items-start gap-3 text-sm">
@@ -265,8 +309,8 @@ export default function RegisterPage() {
             {/* Sign Up Button */}
             <Button
               type="submit"
-              disabled={loading}
-              className="w-full bg-green-600 hover:bg-green-700 text-white h-12 font-semibold text-base"
+              disabled={loading || !passwordValid || !passwordsMatch}
+              className={`w-full bg-green-600 hover:bg-green-700 text-white h-12 font-semibold text-base ${!loading && (!passwordValid || !passwordsMatch) ? 'opacity-50 cursor-not-allowed' : ''}`}
             >
               {loading
                 ? 'Submitting...'

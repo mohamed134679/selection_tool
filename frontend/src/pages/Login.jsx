@@ -18,6 +18,7 @@ export default function LoginPage() {
       .then((data) => {
         localStorage.setItem('accessToken', data.accessToken)
         localStorage.setItem('appUsername', username)
+        localStorage.setItem('userId',data.user._id)
         setLoading(false)
         navigate('/home')
       })

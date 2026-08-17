@@ -63,6 +63,7 @@ export default function Summary() {
                 },
                 body: JSON.stringify({
                     name: projectDraft.name,
+                    createdBy: localStorage.getItem("appUsername"),
                     description: projectDraft.description,
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
