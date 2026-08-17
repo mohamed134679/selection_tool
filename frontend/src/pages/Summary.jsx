@@ -50,12 +50,19 @@ export default function Summary() {
     async function createProject() {
         setSaveError(null);
         try {
+            const accessToken = localStorage.getItem("accessToken");
+            if (!accessToken) {
+                throw new Error("You must be signed in to create a project.");
+            }
+
             const res = await fetch("http://localhost:3000/projects", {
                 method: "POST",
-                headers: { "Content-Type": "application/json" },
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${accessToken}`,
+                },
                 body: JSON.stringify({
                     name: projectDraft.name,
-                    createdBy: localStorage.getItem("appUsername"),
                     description: projectDraft.description,
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
@@ -64,6 +71,12 @@ export default function Summary() {
             });
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
+                // Access token missing/expired — send the user back to sign in
+                // rather than surfacing a raw 401 with no recovery path.
+                if (res.status === 401) {
+                    navigate("/login");
+                    return;
+                }
                 throw new Error(body.message || "Failed to create project");
             }
             setSaved(true);

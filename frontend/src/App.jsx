@@ -14,6 +14,7 @@ import Licence from "./pages/Licence";
 import {ProjectDraftProvider, useProjectDraft} from "./context/ProjectDraftContext.jsx";
 import Summary from "./pages/Summary.jsx";
 import Hardware from "./pages/Hardware.jsx";
+import Projects from "./pages/Projects.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
 
@@ -34,6 +35,7 @@ function AppRoutes() {
     <Routes>
       <Route path="/" element={<Login />} />
       <Route path="/home" element={<HomePage />} />
+      <Route path="/projects" element={<Projects />} />
       <Route path="/projects/new" element={<ProjectBuilderPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

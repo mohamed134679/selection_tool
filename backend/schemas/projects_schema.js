@@ -29,7 +29,7 @@ const projectSchema = new mongoose.Schema({
       protocols: [{ type: String, enum: ['Profinet', 'IEC 61850', 'OPC UA as a client'] }]
     }
   }
-});
+}, { timestamps: true });
 
 const Project = mongoose.model('Project', projectSchema);
 module.exports = Project;

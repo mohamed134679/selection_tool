@@ -26,7 +26,10 @@ export async function postRecommend(payload) {
 }
 
 export async function getProjectCount() {
-  const res = await fetch(`${BASE}/projects/count`)
+  const accessToken = localStorage.getItem("accessToken");
+  const res = await fetch(`${BASE}/projects/count`, {
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+  });
   if (!res.ok) throw new Error('Failed to load project count')
   return res.json()
 }

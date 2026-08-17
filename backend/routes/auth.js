@@ -149,3 +149,6 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
+// Also expose the middleware itself (as a property on the router function)
+// so other route files can do: const { requireAuth } = require('./auth');
+module.exports.requireAuth = requireAuth;
