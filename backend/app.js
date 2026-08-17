@@ -59,19 +59,19 @@ app.use((req, res, next) => {
 });
 
 // Connect to MongoDB
-const seedHardware = require('./Seeder/hardwareSeeder');
-const seedLicenses = require('./Seeder/licenseSeeder');
-const seedIo = require('./Seeder/ioSeeder');
-const seedHmi = require('./Seeder/hmiSeeder');
+// const seedHardware = require('./Seeder/hardwareSeeder');
+// const seedLicenses = require('./Seeder/licenseSeeder');
+// const seedIo = require('./Seeder/ioSeeder');
+// const seedHmi = require('./Seeder/hmiSeeder');
 
 mongoose
   .connect(process.env.MONGODB_URI || 'mongodb://localhost:27017/selection_tool_DB')
   .then(async () => {
     console.log('MongoDB connected');
-    await seedHardware();
-    await seedLicenses();
-    await seedIo();
-    await seedHmi();
+    // await seedHardware();
+    // await seedLicenses();
+    // await seedIo();
+    // await seedHmi();
   })
   .catch((err) => console.log(err));
 
