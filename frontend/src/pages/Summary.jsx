@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import LockedOverlay from "../components/LockedOverlay.jsx";
+import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle } from "lucide-react";
 
 export default function Summary() {
     const { projectDraft, setProjectDraft } = useProjectDraft();
@@ -10,6 +11,7 @@ export default function Summary() {
     const [licenseCatalog, setLicenseCatalog] = useState([]);
     const [hardwareCatalog, setHardwareCatalog] = useState([]);
     const [saveError, setSaveError] = useState(null);
+    const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
 
     useEffect(() => {
@@ -49,6 +51,7 @@ export default function Summary() {
     }
     async function createProject() {
         setSaveError(null);
+        setSaving(true);
         try {
             const accessToken = localStorage.getItem("accessToken");
             if (!accessToken) {
@@ -63,7 +66,6 @@ export default function Summary() {
                 },
                 body: JSON.stringify({
                     name: projectDraft.name,
-                    createdBy: localStorage.getItem("appUsername"),
                     description: projectDraft.description,
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
@@ -85,6 +87,8 @@ export default function Summary() {
             navigate("/home", { replace: true });
         } catch (err) {
             setSaveError(err.message);
+        } finally {
+            setSaving(false);
         }
     }
 
@@ -138,76 +142,170 @@ const requiredLicenses = requiredLicenseNames
         projectDraft.selectedHw.forEach((entry) => {
             hwCounts[entry.hw_id] = (hwCounts[entry.hw_id] || 0) + 1;
     });
-    
-    return (
-        <div className="max-w-3xl mx-auto p-8">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Project Summary</h1>
-            <p>HMI: {selectedHmi ? selectedHmi.Name : "None selected"}</p>
 
-            <div className="mt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Licences</h2>
-                <p>
-                    Build Time: {projectDraft.licences.buildTime.wanted
-                        ? `${projectDraft.licences.buildTime.tier}${
-                            projectDraft.licences.buildTime.addons.length > 0
-                                ? ` (${projectDraft.licences.buildTime.addons.join(", ")})`
-                                : ""
-                        }`
-                        : "Not needed"}
+    const hwEntries = Object.entries(hwCounts);
+
+    return (
+        <div className="max-w-4xl mx-auto p-8">
+            {/* Header */}
+            <div className="mb-10">
+                <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
+                    Final Step
                 </p>
-                <p>Runtime IO Points: {totalIoPoints || "—"}</p>
-                <p>Orchestration Nodes: {projectDraft.licences.orchestration.nodeCount || "—"}</p>
-                <p>
-                    Communication Protocols: {projectDraft.licences.communication.protocols.length > 0
-                        ? projectDraft.licences.communication.protocols.join(",")
-                        : "None"}
-                </p>
-            </div>
-            <div className="mt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Hardware</h2>
-                <ul className="list-disc list-inside">
-                    {Object.entries(hwCounts).map(([hwId, count]) => {
-                        const hw = hardwareCatalog.find((h) => h._id === hwId);
-                        return (
-                            <li key={hwId}>
-                                {hw ? hw.Name : hwId} — Qty: {count}
-                            </li>
-                        );
-                    })}
-                </ul>
-            </div>
-            <div className="mt-6">
-                <h2 className="text-lg font-semibold text-gray-900 mb-2">Required Licences</h2>
-                {requiredLicenses.length === 0 ? (
-                    <p className="text-gray-500">No licences required.</p>
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                    {projectDraft.name || "Project Summary"}
+                </h1>
+                {projectDraft.description ? (
+                    <p className="text-gray-600">{projectDraft.description}</p>
                 ) : (
-                    <ul className="list-disc list-inside">
-                        {requiredLicenses.map((lic) => (
-                            <li key={lic._id}>
-                                {lic.name} ({lic.reference_no})
-                            </li>
-                        ))}
-                    </ul>
+                    <p className="text-gray-400 italic">No description provided</p>
                 )}
             </div>
-                <div className="mt-8">
-                {saveError && <p className="text-sm text-red-700 mb-4">{saveError}</p>}
+
+            {/* Hardware */}
+            <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <Cpu className="w-5 h-5 text-green-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Hardware</h2>
+                </div>
+                {hwEntries.length === 0 ? (
+                    <p className="text-sm text-gray-500">No hardware selected.</p>
+                ) : (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {hwEntries.map(([hwId, count]) => {
+                            const hw = hardwareCatalog.find((h) => h._id === hwId);
+                            return (
+                                <div key={hwId} className="rounded-xl border border-gray-200 p-4">
+                                    <p className="font-medium text-gray-900">{hw ? hw.Name : hwId}</p>
+                                    <p className="text-sm text-gray-500">Qty: {count}</p>
+                                </div>
+                            );
+                        })}
+                    </div>
+                )}
+            </section>
+
+            {/* HMI */}
+            <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <Monitor className="w-5 h-5 text-green-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
+                </div>
+                {selectedHmi ? (
+                    <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
+                        {selectedHmi.image && (
+                            <img
+                                src={selectedHmi.image}
+                                alt={selectedHmi.Name}
+                                className="w-16 h-16 object-contain"
+                            />
+                        )}
+                        <div>
+                            <p className="font-medium text-gray-900">{selectedHmi.Name}</p>
+                            {selectedHmi.brand && (
+                                <p className="text-sm text-gray-500">{selectedHmi.brand}</p>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500">No HMI selected.</p>
+                )}
+            </section>
+
+            {/* Licences */}
+            <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <ShieldCheck className="w-5 h-5 text-green-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Licences</h2>
+                </div>
+                <div className="rounded-xl border border-gray-200 p-4 grid grid-cols-1 sm:grid-cols-2 gap-y-3 gap-x-6 text-sm">
+                    <div>
+                        <p className="text-gray-500 mb-0.5">Build Time</p>
+                        <p className="text-gray-900 font-medium">
+                            {projectDraft.licences.buildTime.wanted
+                                ? `${projectDraft.licences.buildTime.tier}${
+                                    projectDraft.licences.buildTime.addons.length > 0
+                                        ? ` (${projectDraft.licences.buildTime.addons.join(", ")})`
+                                        : ""
+                                }`
+                                : "Not needed"}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-gray-500 mb-0.5">Runtime IO Points</p>
+                        <p className="text-gray-900 font-medium">{totalIoPoints || "—"}</p>
+                    </div>
+                    <div>
+                        <p className="text-gray-500 mb-0.5">Orchestration Nodes</p>
+                        <p className="text-gray-900 font-medium">
+                            {projectDraft.licences.orchestration.nodeCount || "—"}
+                        </p>
+                    </div>
+                    <div>
+                        <p className="text-gray-500 mb-0.5">Communication Protocols</p>
+                        <p className="text-gray-900 font-medium">
+                            {projectDraft.licences.communication.protocols.length > 0
+                                ? projectDraft.licences.communication.protocols.join(", ")
+                                : "None"}
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            {/* Required Licenses */}
+            <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <FileText className="w-5 h-5 text-green-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">Required Licenses</h2>
+                </div>
+                {requiredLicenses.length === 0 ? (
+                    <p className="text-sm text-gray-500">No licences required.</p>
+                ) : (
+                    <div className="space-y-3">
+                        {requiredLicenses.map((lic) => (
+    <div key={lic._id} className="rounded-xl border border-gray-200 p-4">
+        <div className="flex items-center justify-between gap-4">
+            <div>
+                <p className="font-semibold text-gray-900">{lic.name}</p>
+                {lic.description && (
+                    <p className="text-sm text-gray-600 mt-1">{lic.description}</p>
+                )}
+            </div>
+            <span className="flex-shrink-0 text-base font-mono font-semibold text-green-700 bg-green-50 rounded-full px-3 py-1.5">
+                {lic.reference_no}
+            </span>
+        </div>
+    </div>
+))}
+                    </div>
+                )}
+            </section>
+
+            {/* Submit */}
+            <div className="border-t border-gray-200 pt-6">
+                {saveError && (
+                    <p className="flex items-center gap-2 text-sm text-red-700 bg-red-50 border-l-2 border-red-500 rounded-r-md px-3 py-2 mb-4">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        {saveError}
+                    </p>
+                )}
                 {saved ? (
-                    <p className="text-green-700 font-medium">Project created!</p>
+                    <p className="flex items-center gap-2 text-green-700 font-medium">
+                        <CheckCircle2 className="w-5 h-5" />
+                        Project created!
+                    </p>
                 ) : (
                     <button
-                        disabled={!projectDraft.name}
+                        disabled={!projectDraft.name || saving}
                         onClick={createProject}
-                        className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
-                            !projectDraft.name ? "opacity-40 cursor-not-allowed" : ""
+                        className={`rounded-lg bg-green-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-green-700 transition ${
+                            !projectDraft.name || saving ? "opacity-40 cursor-not-allowed" : ""
                         }`}
                     >
-                        Create Project
+                        {saving ? "Creating..." : "Create Project"}
                     </button>
                 )}
+            </div>
         </div>
-
-        </div>
-
     );
 }

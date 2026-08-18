@@ -15,19 +15,27 @@ import {ProjectDraftProvider, useProjectDraft} from "./context/ProjectDraftConte
 import Summary from "./pages/Summary.jsx";
 import Hardware from "./pages/Hardware.jsx";
 import Projects from "./pages/Projects.jsx";
+import ProjectDetail from "./pages/ProjectDetail.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
 
-// Runs INSIDE ProjectDraftProvider so it can read `locked`. If a project
-// was already created, every route except "/" immediately redirects home —
-// this is checked on every render (including ones triggered by the
-// browser's Back/Forward buttons), so it can't be defeated by repeatedly
-// pressing Back, unlike trying to intercept the popstate event by hand.
+// Runs INSIDE ProjectDraftProvider so it can read `locked`. Once a project
+// has been created, the WIZARD routes specifically should redirect home so
+// the user can't re-enter a stale wizard with an already-submitted draft.
+// Everything else (home, login, register, viewing projects) should always
+// be reachable. Listing the routes that SHOULD be blocked (rather than
+// trying to list every route that should be allowed) means new pages added
+// later are reachable by default instead of silently getting swept into
+// the lock by accident.
+const WIZARD_PATHS = ["/hardware", "/hmi", "/licence", "/summary", "/projects/new"];
+
 function AppRoutes() {
   const { projectDraft } = useProjectDraft();
   const location = useLocation();
 
-  if (projectDraft.locked && location.pathname !== "/home") {
+  const isWizardPath = WIZARD_PATHS.includes(location.pathname);
+
+  if (projectDraft.locked && isWizardPath) {
     return <Navigate to="/home" replace />;
   }
 
@@ -36,6 +44,7 @@ function AppRoutes() {
       <Route path="/" element={<Login />} />
       <Route path="/home" element={<HomePage />} />
       <Route path="/projects" element={<Projects />} />
+      <Route path="/projects/:id" element={<ProjectDetail />} />
       <Route path="/projects/new" element={<ProjectBuilderPage />} />
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />

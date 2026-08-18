@@ -19,6 +19,7 @@ router.get('/', requireAuth, async (req, res) => {
     try {
         const projects = await Project.find({ createdBy: req.user._id })
             .populate('Hmi_id')
+            .populate('SelectedHw.hw_id')
             .sort({ createdAt: -1 });
         res.json(projects);
     } catch (err) {
