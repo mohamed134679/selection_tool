@@ -11,7 +11,8 @@ SelectedHw: [{
     quantity: { type: Number },
     selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
     ioPoints: { type: Number },
-    refNumber: { type: String }   // NEW
+    refNumber: { type: String },   // reference number
+    attachmentUrl: { type: String }   //optional prior-architecture image/PDF
 }],
   Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
   licences: {

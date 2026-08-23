@@ -57,3 +57,17 @@ export async function register({ username, password, accountType }) {
   if (!res.ok) throw new Error(body.message || 'Registration failed');
   return body;
 }
+
+export async function uploadFile(file) {
+  const accessToken = localStorage.getItem("accessToken");
+  const formData = new FormData();
+  formData.append("file", file);
+  const res = await fetch(`${BASE}/upload`, {
+    method: "POST",
+    headers: accessToken ? { Authorization: `Bearer ${accessToken}` } : {},
+    body: formData,
+  });
+  const body = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(body.message || "Upload failed");
+  return body; // { url, originalName, mimeType }
+}
