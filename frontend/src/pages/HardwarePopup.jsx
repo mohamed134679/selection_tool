@@ -5,6 +5,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
   const [ioOptions, setIoOptions] = useState([]);
   const [selectedIoId, setSelectedIoId] = useState(null);
   const [ioPoints, setIoPoints] = useState("");
+  const [selectedRef, setSelectedRef] = useState(null); // NEW
 
   useEffect(() => {
     fetch("http://localhost:3000/io")
@@ -16,12 +17,34 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
   const compatibleIo = ioOptions.filter((io) => hw.compatible_io?.includes(io._id));
 
   const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
-  const canApply = ioPointsValid && !!selectedIoId;
+  const hasRefChoices = (hw.partNumbers?.length || 0) > 0;
+  const refValid = !hasRefChoices || !!selectedRef; // no partNumbers on this hw → don't block
+  const canApply = ioPointsValid && !!selectedIoId && refValid;
 
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} — IO Setup</h3>
+
+        {hasRefChoices && (
+          <>
+            <p className="text-sm text-gray-600 mb-2">Choose a reference number:</p>
+            <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
+              {hw.partNumbers.map((pn) => (
+                <label key={pn.code} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="ref-number"
+                    checked={selectedRef === pn.code}
+                    onChange={() => setSelectedRef(pn.code)}
+                  />
+                  <span className="font-mono text-sm">{pn.code}</span>
+                  {pn.label && <span className="text-sm text-gray-500">— {pn.label}</span>}
+                </label>
+              ))}
+            </div>
+          </>
+        )}
 
         <p className="text-sm text-gray-600 mb-2">Choose an IO module:</p>
         <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
@@ -58,7 +81,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
           </button>
           <Button
             disabled={!canApply}
-            onClick={() => onApply([selectedIoId], Number(ioPoints))}
+            onClick={() => onApply([selectedIoId], Number(ioPoints), selectedRef)}
             className={!canApply ? "opacity-40 cursor-not-allowed" : ""}
           >
             Apply

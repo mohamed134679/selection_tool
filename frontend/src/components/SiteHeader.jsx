@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogOut } from "lucide-react";
+import { LogOut, Cpu } from "lucide-react";
 
 export default function SiteHeader() {
   const username = localStorage.getItem("appUsername") || "";
@@ -33,45 +33,65 @@ export default function SiteHeader() {
             </span>
           </Link>
 
-          {/* Profile */}
-          <div className="relative group">
-
-            {/* Profile Circle */}
-            <button
-              type="button"
-              className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-sm hover:bg-green-200 transition"
+          <div className="flex items-center gap-4">
+            {/* Hardware Catalog link */}
+            <Link
+              to="/hardware-catalog"
+              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-green-700 transition"
             >
-              {initial}
-            </button>
+              <Cpu className="w-4 h-4" />
+              Hardware Catalog
+            </Link>
 
-            {/* Hover Dropdown */}
-            <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
+            {/* Profile */}
+            <div className="relative group">
 
-              <div className="w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+              {/* Profile Circle */}
+              <button
+                type="button"
+                className="w-9 h-9 rounded-full bg-green-100 text-green-700 flex items-center justify-center font-semibold text-sm hover:bg-green-200 transition"
+              >
+                {initial}
+              </button>
 
-                {/* Username */}
-                <div className="px-4 py-3 border-b border-gray-100">
-                  <p className="text-xs text-gray-500 mb-1">
-                    Signed in as
-                  </p>
+              {/* Hover Dropdown */}
+              <div className="absolute right-0 top-full pt-2 hidden group-hover:block">
 
-                  <p className="font-semibold text-gray-900 truncate">
-                    {username}
-                  </p>
+                <div className="w-56 bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
+
+                  {/* Username */}
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-xs text-gray-500 mb-1">
+                      Signed in as
+                    </p>
+
+                    <p className="font-semibold text-gray-900 truncate">
+                      {username}
+                    </p>
+                  </div>
+
+                  {/* Hardware Catalog (mobile) */}
+                  <Link
+                    to="/hardware-catalog"
+                    className="sm:hidden flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition"
+                  >
+                    <Cpu className="w-4 h-4" />
+                    Hardware Catalog
+                  </Link>
+
+                  {/* Logout */}
+                  <button
+                    type="button"
+                    onClick={handleLogout}
+                    className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition"
+                  >
+                    <LogOut className="w-4 h-4" />
+                    Logout
+                  </button>
+
                 </div>
 
-                {/* Logout */}
-                <button
-                  type="button"
-                  onClick={handleLogout}
-                  className="w-full flex items-center gap-3 px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition"
-                >
-                  <LogOut className="w-4 h-4" />
-                  Logout
-                </button>
-
               </div>
-
             </div>
           </div>
 

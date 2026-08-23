@@ -6,12 +6,13 @@ const projectSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   HMI: { type: String },
   number_of_hw: { type: Number },
-  SelectedHw: [{
+SelectedHw: [{
     hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
     quantity: { type: Number },
     selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
-    ioPoints: { type: Number }
-  }],
+    ioPoints: { type: Number },
+    refNumber: { type: String }   // NEW
+}],
   Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
   licences: {
     buildTime: {

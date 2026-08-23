@@ -159,10 +159,15 @@ export default function ProjectDetail() {
     if (hmiLicense) requiredLicenses.push(hmiLicense);
   }
 
+  // Group by hardware AND reference number, since two units of the same
+  // hardware can now have different chosen reference numbers.
   const hwCounts = {};
   (project.SelectedHw || []).forEach((entry) => {
-    const key = entry.hw_id?._id || entry.hw_id;
-    if (!hwCounts[key]) hwCounts[key] = { hw: entry.hw_id, count: 0, ioPoints: 0 };
+    const hwKey = entry.hw_id?._id || entry.hw_id;
+    const key = `${hwKey}::${entry.refNumber || "no-ref"}`;
+    if (!hwCounts[key]) {
+      hwCounts[key] = { hw: entry.hw_id, refNumber: entry.refNumber, count: 0, ioPoints: 0 };
+    }
     hwCounts[key].count += 1;
     hwCounts[key].ioPoints += Number(entry.ioPoints) || 0;
   });
@@ -219,9 +224,12 @@ export default function ProjectDetail() {
           <p className="text-sm text-gray-500">No hardware selected.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Object.values(hwCounts).map(({ hw, count, ioPoints }, i) => (
+            {Object.values(hwCounts).map(({ hw, refNumber, count, ioPoints }, i) => (
               <div key={i} className="rounded-xl border border-gray-200 p-4">
                 <p className="font-medium text-gray-900">{hw?.Name || "Unknown hardware"}</p>
+                {refNumber && (
+                  <p className="text-xs font-mono text-green-700 mt-0.5">{refNumber}</p>
+                )}
                 <p className="text-sm text-gray-500">
                   Qty: {count} {ioPoints > 0 && `· ${ioPoints} IO points`}
                 </p>

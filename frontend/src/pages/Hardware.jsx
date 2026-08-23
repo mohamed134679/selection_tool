@@ -25,10 +25,13 @@ function getEntries(hwId) {
   return projectDraft.selectedHw.filter((e) => e.hw_id === hwId);
 }
 
-function addHardware(hwId, selectedIoIds, ioPoints) {
+function addHardware(hwId, selectedIoIds, ioPoints, refNumber) {
   setProjectDraft((prev) => ({
     ...prev,
-    selectedHw: [...prev.selectedHw, { hw_id: hwId, selected_io_ids: selectedIoIds, ioPoints }],
+    selectedHw: [
+      ...prev.selectedHw,
+      { hw_id: hwId, selected_io_ids: selectedIoIds, ioPoints, refNumber },
+    ],
   }));
 }
 
@@ -126,16 +129,16 @@ if(!category) {
                 Next
             </Button>
     </div>
-        {popupHw && (
-                  <HardwarePopup
-                    hw={popupHw}
-                    onClose={() => setPopupHw(null)}
-                    onApply={(selectedIoIds, ioPoints) => {
-                      addHardware(popupHw._id, selectedIoIds, ioPoints);
-                      setPopupHw(null);
-                    }}
-                  />
-            )}
+{popupHw && (
+  <HardwarePopup
+    hw={popupHw}
+    onClose={() => setPopupHw(null)}
+    onApply={(selectedIoIds, ioPoints, refNumber) => {
+      addHardware(popupHw._id, selectedIoIds, ioPoints, refNumber);
+      setPopupHw(null);
+    }}
+  />
+)}
     </div>
   );
 }

@@ -37,6 +37,20 @@ router.get('/type/:type', async (req, res) => {
     }
 });
 
+// New: filter the catalog by family (e.g. "ID-PAC"), used by the
+// read-only hardware overview/catalog page
+router.get('/family/:family', async (req, res) => {
+    try {
+        const hardwareList = await hardware.find({
+            family: req.params.family
+        });
+
+        res.json(hardwareList);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
 router.post('/', async (req, res) => {
     try {
         const newHardware = new hardware(req.body);

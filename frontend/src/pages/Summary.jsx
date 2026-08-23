@@ -138,9 +138,15 @@ const requiredLicenses = requiredLicenseNames
         : null;
     if (hmiLicense) requiredLicenses.push(hmiLicense);
 
+    // Group by hardware AND reference number, since two units of the same
+    // hardware can now have different chosen reference numbers.
     const hwCounts = {};
-        projectDraft.selectedHw.forEach((entry) => {
-            hwCounts[entry.hw_id] = (hwCounts[entry.hw_id] || 0) + 1;
+    projectDraft.selectedHw.forEach((entry) => {
+        const key = `${entry.hw_id}::${entry.refNumber || "no-ref"}`;
+        if (!hwCounts[key]) {
+            hwCounts[key] = { hwId: entry.hw_id, refNumber: entry.refNumber, count: 0 };
+        }
+        hwCounts[key].count += 1;
     });
 
     const hwEntries = Object.entries(hwCounts);
@@ -172,11 +178,14 @@ const requiredLicenses = requiredLicenseNames
                     <p className="text-sm text-gray-500">No hardware selected.</p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {hwEntries.map(([hwId, count]) => {
+                        {hwEntries.map(([key, { hwId, refNumber, count }]) => {
                             const hw = hardwareCatalog.find((h) => h._id === hwId);
                             return (
-                                <div key={hwId} className="rounded-xl border border-gray-200 p-4">
+                                <div key={key} className="rounded-xl border border-gray-200 p-4">
                                     <p className="font-medium text-gray-900">{hw ? hw.Name : hwId}</p>
+                                    {refNumber && (
+                                        <p className="text-xs font-mono text-green-700 mt-0.5">{refNumber}</p>
+                                    )}
                                     <p className="text-sm text-gray-500">Qty: {count}</p>
                                 </div>
                             );

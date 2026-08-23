@@ -18,6 +18,7 @@ import Projects from "./pages/Projects.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
+import HardwareCatalog from "./pages/HardwareCatalog.jsx";
 
 // Runs INSIDE ProjectDraftProvider so it can read `locked`. Once a project
 // has been created, the WIZARD routes specifically should redirect home so
@@ -49,6 +50,7 @@ function AppRoutes() {
       <Route path="/login" element={<Login />} />
       <Route path="/register" element={<Register />} />
       <Route path="/hardware" element={<Hardware />} />
+      <Route path="/hardware-catalog" element={<HardwareCatalog />} />
       <Route path="/hmi" element={<Hmi />} />
       <Route path="/licence" element={<Licence />} />
       <Route path="/summary" element={<Summary />} />
