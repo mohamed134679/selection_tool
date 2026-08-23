@@ -22,15 +22,18 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
       .catch(() => {});
   }, []);
 
-  const compatibleIo = ioOptions.filter((io) => hw.compatible_io?.includes(io._id));
+  const compatibleIo = ioOptions.filter((io) => hw.compatible_io && hw.compatible_io.includes(io._id));
 
   const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
-  const hasRefChoices = (hw.partNumbers?.length || 0) > 0;
-  const refValid = !hasRefChoices || !!selectedRef;
-  const canApply = ioPointsValid && !!selectedIoId && refValid && !uploading;
+
+  const isHarmonyP6 = hw.Name === "Harmony P6";
+  const hasRefChoices = !isHarmonyP6 && hw.partNumbers && hw.partNumbers.length > 0;
+  const manualRefValid = !isHarmonyP6 || (selectedRef && selectedRef.trim().length > 0);
+  const refValid = isHarmonyP6 ? manualRefValid : (!hasRefChoices || Boolean(selectedRef));
+  const canApply = ioPointsValid && Boolean(selectedIoId) && refValid && !uploading;
 
   async function handleFileChange(e) {
-    const file = e.target.files?.[0];
+    const file = e.target.files ? e.target.files[0] : null;
     if (!file) return;
     setUploadError(null);
     setUploading(true);
@@ -53,15 +56,49 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
     setUploadError(null);
   }
 
+  function triggerFilePicker() {
+    if (fileInputRef.current) {
+      fileInputRef.current.click();
+    }
+  }
+
+  const uploadButtonClass = uploading
+    ? "w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-4 py-4 mb-4 text-sm font-medium transition border-gray-200 text-gray-400 cursor-wait"
+    : "w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-4 py-4 mb-4 text-sm font-medium transition border-gray-300 text-gray-600 hover:border-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer";
+
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} — IO Setup</h3>
 
-        {hasRefChoices && (
-          <>
+        {isHarmonyP6 ? (
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-1">Reference number:</p>
+            <p className="text-xs text-gray-500 mb-2">
+              Configure your Harmony P6 on the Schneider Electric product page below, then paste the product code you were given.
+            </p>
+            <a
+              href="https://www.se.com/eg/en/product-range/22953172-harmony-p6/#products"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-green-700 hover:underline font-medium text-xs block mb-2"
+            >
+              Open Schneider Electric product page
+            </a>
+            <input
+              type="text"
+              value={selectedRef || ""}
+              onChange={(e) => setSelectedRef(e.target.value)}
+              placeholder="e.g. HMIP6CTO..."
+              className="border border-gray-300 rounded-lg px-3 py-2 w-full font-mono text-sm"
+            />
+          </div>
+        ) : null}
+
+        {hasRefChoices ? (
+          <div className="mb-4">
             <p className="text-sm text-gray-600 mb-2">Choose a reference number:</p>
-            <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
+            <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
               {hw.partNumbers.map((pn) => (
                 <label key={pn.code} className="flex items-center gap-2 cursor-pointer">
                   <input
@@ -71,18 +108,18 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
                     onChange={() => setSelectedRef(pn.code)}
                   />
                   <span className="font-mono text-sm">{pn.code}</span>
-                  {pn.label && <span className="text-sm text-gray-500">— {pn.label}</span>}
+                  {pn.label ? <span className="text-sm text-gray-500">— {pn.label}</span> : null}
                 </label>
               ))}
             </div>
-          </>
-        )}
+          </div>
+        ) : null}
 
         <p className="text-sm text-gray-600 mb-2">Choose an IO module:</p>
         <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
-          {compatibleIo.length === 0 && (
+          {compatibleIo.length === 0 ? (
             <p className="text-sm text-gray-500">No compatible IO modules found.</p>
-          )}
+          ) : null}
           {compatibleIo.map((io) => (
             <label key={io._id} className="flex items-center gap-2 cursor-pointer">
               <input
@@ -107,67 +144,63 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
           placeholder="e.g. 100"
         />
 
-<p className="text-sm font-medium text-gray-900 mb-1">Previous architecture</p>
-<p className="text-xs text-gray-500 mb-3">Optional — attach an image or PDF for reference.</p>
+        <p className="text-sm font-medium text-gray-900 mb-1">Previous architecture</p>
+        <p className="text-xs text-gray-500 mb-3">Optional — attach an image or PDF for reference.</p>
 
-<input
-  ref={fileInputRef}
-  type="file"
-  accept="image/png,image/jpeg,image/webp,application/pdf"
-  onChange={handleFileChange}
-  disabled={uploading}
-  className="hidden"
-/>
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/png,image/jpeg,image/webp,application/pdf"
+          onChange={handleFileChange}
+          disabled={uploading}
+          className="hidden"
+        />
 
-{attachmentUrl ? (
-  <div className="flex items-center justify-between gap-3 border border-green-200 bg-green-50 rounded-lg px-4 py-3 mb-4">
-    <div className="flex items-center gap-3 min-w-0">
-      <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
-        {attachmentName?.toLowerCase().endsWith(".pdf") ? (
-          <FileText className="w-4 h-4 text-green-700" />
+        {attachmentUrl ? (
+          <div className="flex items-center justify-between gap-3 border border-green-200 bg-green-50 rounded-lg px-4 py-3 mb-4">
+            <div className="flex items-center gap-3 min-w-0">
+              <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
+                {attachmentName && attachmentName.toLowerCase().endsWith(".pdf") ? (
+                  <FileText className="w-4 h-4 text-green-700" />
+                ) : (
+                  <ImageIcon className="w-4 h-4 text-green-700" />
+                )}
+              </div>
+              <span className="text-sm font-medium text-gray-800 truncate">{attachmentName}</span>
+            </div>
+            <button
+              type="button"
+              onClick={removeAttachment}
+              className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition flex-shrink-0"
+              aria-label="Remove attachment"
+            >
+              <X className="w-4 h-4" />
+            </button>
+          </div>
         ) : (
-          <ImageIcon className="w-4 h-4 text-green-700" />
+          <button
+            type="button"
+            onClick={triggerFilePicker}
+            disabled={uploading}
+            className={uploadButtonClass}
+          >
+            {uploading ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Uploading...
+              </>
+            ) : (
+              <>
+                <Upload className="w-4 h-4" />
+                Upload image or PDF
+              </>
+            )}
+          </button>
         )}
-      </div>
-      <span className="text-sm font-medium text-gray-800 truncate">{attachmentName}</span>
-    </div>
-    <button
-      type="button"
-      onClick={removeAttachment}
-      className="w-7 h-7 rounded-full flex items-center justify-center text-gray-400 hover:text-red-600 hover:bg-red-50 transition flex-shrink-0"
-      aria-label="Remove attachment"
-    >
-      <X className="w-4 h-4" />
-    </button>
-  </div>
-) : (
-  <button
-    type="button"
-    onClick={() => fileInputRef.current?.click()}
-    disabled={uploading}
-    className={`w-full flex items-center justify-center gap-2 border-2 border-dashed rounded-lg px-4 py-4 mb-4 text-sm font-medium transition ${
-      uploading
-        ? "border-gray-200 text-gray-400 cursor-wait"
-        : "border-gray-300 text-gray-600 hover:border-green-600 hover:text-green-700 hover:bg-green-50 cursor-pointer"
-    }`}
-  >
-    {uploading ? (
-      <>
-        <Loader2 className="w-4 h-4 animate-spin" />
-        Uploading...
-      </>
-    ) : (
-      <>
-        <Upload className="w-4 h-4" />
-        Upload image or PDF
-      </>
-    )}
-  </button>
-)}
 
-{uploadError && (
-  <p className="text-xs text-red-600 mb-4 -mt-2">{uploadError}</p>
-)}
+        {uploadError ? (
+          <p className="text-xs text-red-600 mb-4 -mt-2">{uploadError}</p>
+        ) : null}
 
         <div className="flex justify-end gap-3">
           <button onClick={onClose} className="text-sm text-gray-600 hover:underline">
