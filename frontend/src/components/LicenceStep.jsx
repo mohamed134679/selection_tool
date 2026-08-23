@@ -44,6 +44,17 @@ function updateLicences(section, updates){
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Licences</h2>
         <p className="text-gray-600 mb-6">Do you need a Build Time (Engineering) licence?</p>
         <p className="text-sm text-gray-500 mb-6">Build Time licences are single-seat and perpetual.</p>
+
+        <div className="mb-8 rounded-xl border border-green-100 bg-green-50 p-4">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
+            The Buildtime licence is the engineering licence used to design,
+            develop, test, and deploy your EAE applications. It's{" "}
+            <span className="font-semibold">single-seat and perpetual</span> —
+            you buy it once per engineering workstation, not per year.
+          </p>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
           <div
             onClick={() => {
@@ -81,6 +92,23 @@ function updateLicences(section, updates){
     <div>
       <h2 className="text-2xl font-bold text-gray-900 mb-2">Engineering Licence</h2>
       <p className="text-gray-600 mb-6">Choose a tier.</p>
+
+      <div className="mb-8 rounded-xl border border-green-100 bg-green-50 p-4">
+        <p className="text-sm text-gray-700">
+          <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
+          <span className="font-semibold">Standard</span> covers essential
+          features and custom library creation, and already includes the
+          Asset Link for Bulk Engineering add-on — you can extend it with
+          High Availability, Asset Link for AVEVA OMI, and Procedural
+          Automation add-ons.{" "}
+          <span className="font-semibold">Professional</span> includes all
+          currently available features (all add-ons), plus any new features
+          released within the first year after activation. Both are
+          available perpetual or subscription-based, and in single-seat or
+          multi-seat (1, 3, 10, 100) options.
+        </p>
+      </div>
+
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-8">
         <div
           onClick={() => {
@@ -117,6 +145,19 @@ if (step === "addons") {
         <div>
         <h2 className="text-2xl font-bold text-gray-900 mb-2">Add-ons</h2>
         <p className="text-gray-600 mb-6">Select any add-ons for your Standard licence (optional).</p>
+
+        <div className="mb-6 rounded-xl border border-green-100 bg-green-50 p-4">
+          <p className="text-sm text-gray-700">
+            <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
+            <span className="font-semibold">High Availability</span> adds
+            redundancy functions for increased system availability.{" "}
+            <span className="font-semibold">Asset Link</span> integrates with
+            AVEVA System Platform environments.{" "}
+            <span className="font-semibold">Procedural Libraries</span>{" "}
+            provide reusable procedural automation functions.
+          </p>
+        </div>
+
         <div className="flex flex-col gap-3 mb-6">  
             {["High Availability", "Asset Link", "Procedural Libraries"].map((name) => (
             <label key={name} className="flex items-center gap-2 cursor-pointer">
@@ -145,6 +186,19 @@ if (step === "addons") {
             <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Orchestration Licence</h2>
             <p className="text-gray-600 mb-6">How many orchestrated nodes does this project need?</p>
+
+            <div className="mb-6 rounded-xl border border-green-100 bg-green-50 p-4">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
+                This is the <span className="font-semibold">Runtime Orchestration Licence</span> —
+                think of it as the "EAE Core Platform" licence. It's sized by{" "}
+                <span className="font-semibold">node count</span>, and applies
+                to both physical and virtual EAE controllers. Note this is a
+                different licence and sizing parameter than the SoftdPAC
+                Runtime Control licence, which is sized by I/O count.
+              </p>
+            </div>
+
             <input
                 type="number"
                 min="1"
@@ -175,6 +229,17 @@ if (step === "addons") {
                 Modbus TCP, Modbus Serial, MQTT, and Ethernet/IP are free — no licence needed.
             </p>
             <p className="text-gray-600 mb-6">Select any of these that also apply (licensed):</p>
+
+            <div className="mb-6 rounded-xl border border-green-100 bg-green-50 p-4">
+              <p className="text-sm text-gray-700">
+                <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
+                Additional communication licences are needed for protocols
+                like PROFINET IO, OPC UA as a client, and EtherCAT. Check
+                these during architecture definition to avoid late project
+                changes.
+              </p>
+            </div>
+
             <div className="flex flex-col gap-3 mb-6">
                 {["Profinet", "IEC 61850", "OPC UA as a client"].map((name) => (
                 <label key={name} className="flex items-center gap-2 cursor-pointer">
