@@ -84,6 +84,8 @@ const hmiRoutes = require('./routes/hmi');
 const projectRoutes = require('./routes/project');
 const hardwareRoutes = require('./routes/hardware');
 const licenseRoutes = require('./routes/license');
+const path = require('path');
+const uploadsRouter = require('./routes/uploads');
 
 app.use('/auth', authRoutes);
 app.use('/io', ioRoutes);
@@ -91,6 +93,8 @@ app.use('/hmi', hmiRoutes);
 app.use('/projects', projectRoutes);
 app.use('/hardware', hardwareRoutes);
 app.use('/license', licenseRoutes);
+app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serves the actual files
+app.use('/upload', uploadsRouter); // POST endpoint that saves them
 
 // Catch anything thrown in async route handlers that wasn't already
 // caught locally, so the process doesn't crash on an unhandled rejection
