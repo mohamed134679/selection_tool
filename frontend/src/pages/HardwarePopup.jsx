@@ -6,6 +6,7 @@ import { uploadFile } from "../api";
 export default function HardwarePopup({ hw, onApply, onClose }) {
   const [ioOptions, setIoOptions] = useState([]);
   const [selectedIoId, setSelectedIoId] = useState(null);
+  const [selectedIoRef, setSelectedIoRef] = useState(null);
   const [ioPoints, setIoPoints] = useState("");
   const [selectedRef, setSelectedRef] = useState(null);
 
@@ -23,6 +24,14 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
   }, []);
 
   const compatibleIo = ioOptions.filter((io) => hw.compatible_io && hw.compatible_io.includes(io._id));
+  const selectedIoModule = compatibleIo.find((io) => io._id === selectedIoId) || null;
+  const hasIoRefChoices = Boolean(selectedIoModule && selectedIoModule.partNumbers && selectedIoModule.partNumbers.length > 0);
+  const ioRefValid = !hasIoRefChoices || Boolean(selectedIoRef);
+
+  function selectIoModule(ioId) {
+    setSelectedIoId(ioId);
+    setSelectedIoRef(null); // reset — a different IO module's reference list doesn't apply anymore
+  }
 
   const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
 
@@ -30,7 +39,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
   const hasRefChoices = !isHarmonyP6 && hw.partNumbers && hw.partNumbers.length > 0;
   const manualRefValid = !isHarmonyP6 || (selectedRef && selectedRef.trim().length > 0);
   const refValid = isHarmonyP6 ? manualRefValid : (!hasRefChoices || Boolean(selectedRef));
-  const canApply = ioPointsValid && Boolean(selectedIoId) && refValid && !uploading;
+  const canApply = ioPointsValid && Boolean(selectedIoId) && refValid && ioRefValid && !uploading;
 
   async function handleFileChange(e) {
     const file = e.target.files ? e.target.files[0] : null;
@@ -69,7 +78,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
   return (
     <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} — IO Setup</h3>
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} - IO Setup</h3>
 
         {isHarmonyP6 ? (
           <div className="mb-4">
@@ -108,7 +117,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
                     onChange={() => setSelectedRef(pn.code)}
                   />
                   <span className="font-mono text-sm">{pn.code}</span>
-                  {pn.label ? <span className="text-sm text-gray-500">— {pn.label}</span> : null}
+                  {pn.label ? <span className="text-sm text-gray-500">- {pn.label}</span> : null}
                 </label>
               ))}
             </div>
@@ -126,12 +135,32 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
                 type="radio"
                 name="io-module"
                 checked={selectedIoId === io._id}
-                onChange={() => setSelectedIoId(io._id)}
+                onChange={() => selectIoModule(io._id)}
               />
               {io.Name}
             </label>
           ))}
         </div>
+
+        {hasIoRefChoices ? (
+          <div className="mb-4">
+            <p className="text-sm text-gray-600 mb-2">Choose a reference number for {selectedIoModule.Name}:</p>
+            <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
+              {selectedIoModule.partNumbers.map((pn) => (
+                <label key={pn.code} className="flex items-center gap-2 cursor-pointer">
+                  <input
+                    type="radio"
+                    name="io-ref-number"
+                    checked={selectedIoRef === pn.code}
+                    onChange={() => setSelectedIoRef(pn.code)}
+                  />
+                  <span className="font-mono text-sm">{pn.code}</span>
+                  {pn.label ? <span className="text-sm text-gray-500">- {pn.label}</span> : null}
+                </label>
+              ))}
+            </div>
+          </div>
+        ) : null}
 
         <p className="text-sm text-gray-600 mb-2">IO Points:</p>
         <input
@@ -145,7 +174,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
         />
 
         <p className="text-sm font-medium text-gray-900 mb-1">Previous architecture</p>
-        <p className="text-xs text-gray-500 mb-3">Optional — attach an image or PDF for reference.</p>
+        <p className="text-xs text-gray-500 mb-3">Optional - attach an image or PDF for reference.</p>
 
         <input
           ref={fileInputRef}
@@ -208,7 +237,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
           </button>
           <Button
             disabled={!canApply}
-            onClick={() => onApply([selectedIoId], Number(ioPoints), selectedRef, attachmentUrl)}
+            onClick={() => onApply([selectedIoId], Number(ioPoints), selectedRef, attachmentUrl, selectedIoRef)}
             className={!canApply ? "opacity-40 cursor-not-allowed" : ""}
           >
             Apply

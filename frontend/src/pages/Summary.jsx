@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import LockedOverlay from "../components/LockedOverlay.jsx";
-import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle } from "lucide-react";
+import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
+
+const FILE_BASE = "http://localhost:3000";
 
 export default function Summary() {
     const { projectDraft, setProjectDraft } = useProjectDraft();
@@ -138,18 +140,28 @@ const requiredLicenses = requiredLicenseNames
         : null;
     if (hmiLicense) requiredLicenses.push(hmiLicense);
 
-    // Group by hardware AND reference number, since two units of the same
-    // hardware can now have different chosen reference numbers.
-    const hwCounts = {};
+    // Group by hardware + reference number + IO reference number, since two
+    // units of the same hardware can now differ on any of those. Each
+    // group also collects every uploaded attachment from its member units.
+    const hwGroups = {};
     projectDraft.selectedHw.forEach((entry) => {
-        const key = `${entry.hw_id}::${entry.refNumber || "no-ref"}`;
-        if (!hwCounts[key]) {
-            hwCounts[key] = { hwId: entry.hw_id, refNumber: entry.refNumber, count: 0 };
+        const key = `${entry.hw_id}::${entry.refNumber || "no-ref"}::${entry.ioRefNumber || "no-io-ref"}`;
+        if (!hwGroups[key]) {
+            hwGroups[key] = {
+                hwId: entry.hw_id,
+                refNumber: entry.refNumber,
+                ioRefNumber: entry.ioRefNumber,
+                count: 0,
+                attachments: [],
+            };
         }
-        hwCounts[key].count += 1;
+        hwGroups[key].count += 1;
+        if (entry.attachmentUrl) {
+            hwGroups[key].attachments.push(entry.attachmentUrl);
+        }
     });
 
-    const hwEntries = Object.entries(hwCounts);
+    const hwEntries = Object.entries(hwGroups);
 
     return (
         <div className="max-w-4xl mx-auto p-8">
@@ -178,15 +190,40 @@ const requiredLicenses = requiredLicenseNames
                     <p className="text-sm text-gray-500">No hardware selected.</p>
                 ) : (
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {hwEntries.map(([key, { hwId, refNumber, count }]) => {
+                        {hwEntries.map(([key, { hwId, refNumber, ioRefNumber, count, attachments }]) => {
                             const hw = hardwareCatalog.find((h) => h._id === hwId);
                             return (
                                 <div key={key} className="rounded-xl border border-gray-200 p-4">
                                     <p className="font-medium text-gray-900">{hw ? hw.Name : hwId}</p>
                                     {refNumber && (
-                                        <p className="text-xs font-mono text-green-700 mt-0.5">{refNumber}</p>
+                                        <p className="text-xs font-mono text-green-700 mt-1">
+                                            Ref: {refNumber}
+                                        </p>
                                     )}
-                                    <p className="text-sm text-gray-500">Qty: {count}</p>
+                                    {ioRefNumber && (
+                                        <p className="text-xs font-mono text-blue-700 mt-0.5">
+                                            IO Ref: {ioRefNumber}
+                                        </p>
+                                    )}
+
+                                    <p className="text-sm text-gray-500 mt-1">Qty: {count}</p>
+
+                                    {attachments.length > 0 && (
+                                        <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                                            {attachments.map((url, i) => (
+                                                <a
+                                                    key={i}
+                                                    href={`${FILE_BASE}${url}`}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex items-center gap-1.5 text-xs text-green-700 hover:underline"
+                                                >
+                                                    <Paperclip className="w-3 h-3 flex-shrink-0" />
+                                                    Attachment {attachments.length > 1 ? i + 1 : ""}
+                                                </a>
+                                            ))}
+                                        </div>
+                                    )}
                                 </div>
                             );
                         })}

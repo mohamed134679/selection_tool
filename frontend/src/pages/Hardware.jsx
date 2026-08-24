@@ -25,12 +25,12 @@ function getEntries(hwId) {
   return projectDraft.selectedHw.filter((e) => e.hw_id === hwId);
 }
 
-function addHardware(hwId, selectedIoIds, ioPoints, refNumber,attachmentUrl) {
+function addHardware(hwId, selectedIoIds, ioPoints, refNumber, attachmentUrl, ioRefNumber) {
   setProjectDraft((prev) => ({
     ...prev,
     selectedHw: [
       ...prev.selectedHw,
-      { hw_id: hwId, selected_io_ids: selectedIoIds, ioPoints, refNumber,attachmentUrl },
+      { hw_id: hwId, selected_io_ids: selectedIoIds, ioPoints, refNumber, attachmentUrl, ioRefNumber },
     ],
   }));
 }
@@ -56,17 +56,13 @@ if(!category) {
         Choose Hardware Category
     </h1>
 
-    <p className="text-gray-600 mb-4">
-        Choose how you want your control system to run.
-    </p>
-
     <div className="mb-8 rounded-xl border border-green-100 bg-green-50 p-4">
         <p className="text-sm text-gray-700">
-            <span className="font-semibold text-gray-900">💡 Tip:</span>{" "}
-            Choose <span className="font-semibold">SoftdPAC</span> if you
-            want more flexibility in choosing your hardware. Choose{" "}
-            <span className="font-semibold">IEC 61499 Controller</span> if you
-            need a dedicated industrial controller.
+            <span className="font-semibold text-gray-900">💡 ProTip:</span>{" "}
+            Considerd <span className="font-semibold">SoftdPAC</span> if hardware independence is a project requirement, Existing IPC infrastructure must be reused,
+ Multiple communication protocols are expected,
+ Vendor lock-in must be avoided,
+ Virtualization is required, or no mandatory PLC requirement.
         </p>
     </div>
 
@@ -80,19 +76,22 @@ if(!category) {
             </h3>
 
             <p className="mt-2 text-sm text-gray-600">
-                A flexible control option that can run on different
-                industrial computers.
+                A virtual PLC runtime used within EcoStruxure Automation Expert.
+            </p>
+
+                        <p className="mt-2 text-sm text-gray-600">
+It allows the control application to becomes independent from the underlying computing platform.
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
-                    Flexible Hardware
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
+                    Flexible virtual Control
                 </span>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
-                    Virtual Control
-                </span>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
                     Hardware Independent
+                </span>
+                  <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
+                    Hardware Abstraction
                 </span>
             </div>
         </div>
@@ -111,13 +110,13 @@ if(!category) {
             </p>
 
             <div className="mt-4 flex flex-wrap gap-2">
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
                     Dedicated Controller
                 </span>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
                     IEC 61499
                 </span>
-                <span className="rounded-full bg-gray-100 px-3 py-1 text-xs text-gray-600">
+                <span className="rounded-full bg-green-100 px-3 py-1 text-xs text-gray-600">
                     Industrial Control
                 </span>
             </div>
@@ -189,8 +188,8 @@ if(!category) {
   <HardwarePopup
     hw={popupHw}
     onClose={() => setPopupHw(null)}
-    onApply={(selectedIoIds, ioPoints, refNumber, attachmentUrl) => {
-      addHardware(popupHw._id, selectedIoIds, ioPoints, refNumber, attachmentUrl);
+    onApply={(selectedIoIds, ioPoints, refNumber, attachmentUrl, ioRefNumber) => {
+      addHardware(popupHw._id, selectedIoIds, ioPoints, refNumber, attachmentUrl, ioRefNumber);
       setPopupHw(null);
     }}
   />

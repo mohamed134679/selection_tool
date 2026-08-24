@@ -8,7 +8,10 @@ import {
   Calendar,
   User,
   Trash2,
+  Paperclip,
 } from "lucide-react";
+
+const FILE_BASE = "http://localhost:3000";
 
 const addonLicenseNames = {
   "High Availability": "High Availability Add-on",
@@ -159,17 +162,28 @@ export default function ProjectDetail() {
     if (hmiLicense) requiredLicenses.push(hmiLicense);
   }
 
-  // Group by hardware AND reference number, since two units of the same
-  // hardware can now have different chosen reference numbers.
-  const hwCounts = {};
+  // Group by hardware + reference number + IO reference number, since two
+  // units of the same hardware can differ on any of those. Each group also
+  // collects every uploaded attachment from its member units.
+  const hwGroups = {};
   (project.SelectedHw || []).forEach((entry) => {
     const hwKey = entry.hw_id?._id || entry.hw_id;
-    const key = `${hwKey}::${entry.refNumber || "no-ref"}`;
-    if (!hwCounts[key]) {
-      hwCounts[key] = { hw: entry.hw_id, refNumber: entry.refNumber, count: 0, ioPoints: 0 };
+    const key = `${hwKey}::${entry.refNumber || "no-ref"}::${entry.ioRefNumber || "no-io-ref"}`;
+    if (!hwGroups[key]) {
+      hwGroups[key] = {
+        hw: entry.hw_id,
+        refNumber: entry.refNumber,
+        ioRefNumber: entry.ioRefNumber,
+        count: 0,
+        ioPoints: 0,
+        attachments: [],
+      };
     }
-    hwCounts[key].count += 1;
-    hwCounts[key].ioPoints += Number(entry.ioPoints) || 0;
+    hwGroups[key].count += 1;
+    hwGroups[key].ioPoints += Number(entry.ioPoints) || 0;
+    if (entry.attachmentUrl) {
+      hwGroups[key].attachments.push(entry.attachmentUrl);
+    }
   });
 
   return (
@@ -220,19 +234,41 @@ export default function ProjectDetail() {
           <Cpu className="w-5 h-5 text-green-600" />
           <h2 className="text-lg font-semibold text-gray-900">Hardware</h2>
         </div>
-        {Object.keys(hwCounts).length === 0 ? (
+        {Object.keys(hwGroups).length === 0 ? (
           <p className="text-sm text-gray-500">No hardware selected.</p>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {Object.values(hwCounts).map(({ hw, refNumber, count, ioPoints }, i) => (
+            {Object.values(hwGroups).map(({ hw, refNumber, ioRefNumber, count, ioPoints, attachments }, i) => (
               <div key={i} className="rounded-xl border border-gray-200 p-4">
                 <p className="font-medium text-gray-900">{hw?.Name || "Unknown hardware"}</p>
+
                 {refNumber && (
-                  <p className="text-xs font-mono text-green-700 mt-0.5">{refNumber}</p>
+                  <p className="text-xs font-mono text-green-700 mt-1">Ref: {refNumber}</p>
                 )}
-                <p className="text-sm text-gray-500">
+                {ioRefNumber && (
+                  <p className="text-xs font-mono text-blue-700 mt-0.5">IO Ref: {ioRefNumber}</p>
+                )}
+
+                <p className="text-sm text-gray-500 mt-1">
                   Qty: {count} {ioPoints > 0 && `· ${ioPoints} IO points`}
                 </p>
+
+                {attachments.length > 0 && (
+                  <div className="mt-2 pt-2 border-t border-gray-100 space-y-1">
+                    {attachments.map((url, j) => (
+                      <a
+                        key={j}
+                        href={`${FILE_BASE}${url}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="flex items-center gap-1.5 text-xs text-green-700 hover:underline"
+                      >
+                        <Paperclip className="w-3 h-3 flex-shrink-0" />
+                        Attachment {attachments.length > 1 ? j + 1 : ""}
+                      </a>
+                    ))}
+                  </div>
+                )}
               </div>
             ))}
           </div>

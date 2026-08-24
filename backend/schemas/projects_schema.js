@@ -12,7 +12,9 @@ SelectedHw: [{
     selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
     ioPoints: { type: Number },
     refNumber: { type: String },   // reference number
-    attachmentUrl: { type: String }   //optional prior-architecture image/PDF
+    attachmentUrl: { type: String },   //optional prior-architecture image/PDF
+    ioRefNumber: { type: String }   //chosen reference for the selected IO module
+
 }],
   Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
   licences: {
