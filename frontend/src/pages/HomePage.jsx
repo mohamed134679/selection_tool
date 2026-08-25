@@ -21,11 +21,6 @@ export default function HomePage() {
   const [stats, setStats] = useState(initialStats)
 
   function startProject() {
-    // Starting a new project must reset the whole draft, not just set
-    // name/description on top of it — otherwise `locked` (and any
-    // hardware/HMI/licence choices) left over from a previously created
-    // project would still be sitting here, either silently blocking this
-    // new attempt or leaking stale selections into it.
     setProjectDraft({
       name,
       description,
@@ -33,6 +28,8 @@ export default function HomePage() {
       justCreated: false,
       selectedHw: [],
       hmiId: null,
+      hmiUsesControlHw: false,
+      hmiRefNumber: null,
       licences: {
         buildTime: { wanted: null, tier: null, addons: [] },
         runtime: { ioPoints: null },

@@ -186,6 +186,13 @@ export default function ProjectDetail() {
     }
   });
 
+    const consolidatedHwRef = project.hmiUsesControlHw
+    ? (project.SelectedHw || []).find((entry) => {
+        const hw = entry.hw_id;
+        return Boolean(hw && hw.Name === "Harmony P6");
+      })?.refNumber
+    : null;
+
   return (
     <div className="max-w-4xl mx-auto p-8">
       <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm text-green-700 hover:underline mb-6">
@@ -275,30 +282,48 @@ export default function ProjectDetail() {
         )}
       </section>
 
-      {/* HMI */}
-      <section className="mb-10">
-        <div className="flex items-center gap-2 mb-4">
-          <Monitor className="w-5 h-5 text-green-600" />
-          <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
+{/* HMI */}
+<section className="mb-10">
+    <div className="flex items-center gap-2 mb-4">
+        <Monitor className="w-5 h-5 text-green-600" />
+        <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
+    </div>
+    {project.hmiUsesControlHw ? (
+        <div className="rounded-xl border border-green-200 bg-green-50 p-4 inline-flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
+                <Check className="w-4 h-4 text-green-700" />
+            </div>
+            <div>
+                <p className="font-medium text-gray-900">Same as Control/IO hardware</p>
+                <p className="text-sm text-gray-600">Harmony P6 hosts both Control and HMI</p>
+                {consolidatedHwRef && (
+                    <p className="text-xs font-mono text-green-700 mt-1">Ref: {consolidatedHwRef}</p>
+                )}
+            </div>
         </div>
-        {project.Hmi_id ? (
-          <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
+    ) : project.Hmi_id ? (
+        <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
             {project.Hmi_id.image && (
-              <img
-                src={project.Hmi_id.image}
-                alt={project.Hmi_id.Name}
-                className="w-16 h-16 object-contain"
-              />
+                <img
+                    src={project.Hmi_id.image}
+                    alt={project.Hmi_id.Name}
+                    className="w-16 h-16 object-contain"
+                />
             )}
             <div>
-              <p className="font-medium text-gray-900">{project.Hmi_id.Name}</p>
-              <p className="text-sm text-gray-500">{project.Hmi_id.brand}</p>
+                <p className="font-medium text-gray-900">{project.Hmi_id.Name}</p>
+                <p className="text-sm text-gray-500">{project.Hmi_id.brand}</p>
+                {project.hmiRefNumber && (
+                    <p className="text-xs font-mono text-green-700 mt-1">
+                        Ref: {project.hmiRefNumber}
+                    </p>
+                )}
             </div>
-          </div>
-        ) : (
-          <p className="text-sm text-gray-500">No HMI selected.</p>
-        )}
-      </section>
+        </div>
+    ) : (
+        <p className="text-sm text-gray-500">No HMI selected.</p>
+    )}
+</section>
 
       {/* Licences */}
       <section className="mb-10">

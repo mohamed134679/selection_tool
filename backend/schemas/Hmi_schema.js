@@ -5,7 +5,11 @@ const HmiSchema = new mongoose.Schema({
   Name: { type: String, required: true },
   image: { type: String },
   brand: {type: String, required: true, enum: ['Schneider','Third-Party']},
-  license: { type: mongoose.Schema.Types.ObjectId, ref: 'License' }
+  license: { type: mongoose.Schema.Types.ObjectId, ref: 'License' },
+    partNumbers: [{
+    code: { type: String, required: true },
+    label: { type: String }
+    }]
 });
 const Hmi = mongoose.models.Hmi || mongoose.model('Hmi', HmiSchema);
 module.exports = Hmi;

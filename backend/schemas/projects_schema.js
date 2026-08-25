@@ -1,4 +1,3 @@
-// Project — rebuilt to match new spec (HMI kept, licence untouched)
 const mongoose = require('mongoose');
 const projectSchema = new mongoose.Schema({
   name: { type: String, required: true },
@@ -6,17 +5,18 @@ const projectSchema = new mongoose.Schema({
   createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   HMI: { type: String },
   number_of_hw: { type: Number },
-SelectedHw: [{
+  SelectedHw: [{
     hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
     quantity: { type: Number },
     selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
     ioPoints: { type: Number },
-    refNumber: { type: String },   // reference number
-    attachmentUrl: { type: String },   //optional prior-architecture image/PDF
-    ioRefNumber: { type: String }   //chosen reference for the selected IO module
-
-}],
+    refNumber: { type: String },
+    attachmentUrl: { type: String },
+    ioRefNumber: { type: String }
+  }],
   Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
+  hmiUsesControlHw: { type: Boolean, default: false },
+  hmiRefNumber: { type: String },
   licences: {
     buildTime: {
       wanted: { type: Boolean, default: false },

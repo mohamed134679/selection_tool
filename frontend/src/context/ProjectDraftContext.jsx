@@ -10,6 +10,8 @@ export const ProjectDraftProvider = ({ children }) => {
     justCreated: false,
     selectedHw: [],
     hmiId: null,
+    hmiUsesControlHw: false,
+    hmiRefNumber: null,
     licences: {
         buildTime: {wanted: null, tier:null, addons: []},
         runtime: {ioPoints: null},
