@@ -1,7 +1,8 @@
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Upload, FileText, Image as ImageIcon, X, Loader2 } from "lucide-react";
+import { Upload, FileText, Image as ImageIcon, X, Loader2, Check } from "lucide-react";
 import { uploadFile } from "../api";
+import { isHarmonyP6 } from "../lib/harmonyP6";
 
 export default function HardwarePopup({ hw, onApply, onClose }) {
   const [ioOptions, setIoOptions] = useState([]);
@@ -25,20 +26,33 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
 
   const compatibleIo = ioOptions.filter((io) => hw.compatible_io && hw.compatible_io.includes(io._id));
   const selectedIoModule = compatibleIo.find((io) => io._id === selectedIoId) || null;
-  const hasIoRefChoices = Boolean(selectedIoModule && selectedIoModule.partNumbers && selectedIoModule.partNumbers.length > 0);
+
+const isSelectedEdgeIo = selectedIoModule && selectedIoModule.Name && selectedIoModule.Name.toLowerCase().includes("edge io");
+
+const hasIoRefChoices = Boolean(
+  !isSelectedEdgeIo &&
+  selectedIoModule &&
+  selectedIoModule.partNumbers &&
+  selectedIoModule.partNumbers.length > 1
+);
   const ioRefValid = !hasIoRefChoices || Boolean(selectedIoRef);
 
   function selectIoModule(ioId) {
     setSelectedIoId(ioId);
-    setSelectedIoRef(null); // reset — a different IO module's reference list doesn't apply anymore
+    const io = compatibleIo.find((i) => i._id === ioId);
+    if (io && io.partNumbers && io.partNumbers.length === 1) {
+      setSelectedIoRef(io.partNumbers[0].code);
+    } else {
+      setSelectedIoRef(null);
+    }
   }
 
   const ioPointsValid = ioPoints && Number(ioPoints) >= 1 && Number(ioPoints) <= 5000;
 
-  const isHarmonyP6 = hw.Name === "Harmony P6";
-  const hasRefChoices = !isHarmonyP6 && hw.partNumbers && hw.partNumbers.length > 0;
-  const manualRefValid = !isHarmonyP6 || (selectedRef && selectedRef.trim().length > 0);
-  const refValid = isHarmonyP6 ? manualRefValid : (!hasRefChoices || Boolean(selectedRef));
+  const isHarmonyP6Hw = isHarmonyP6(hw);
+  const hasRefChoices = !isHarmonyP6Hw && hw.partNumbers && hw.partNumbers.length > 0;
+  const manualRefValid = !isHarmonyP6Hw || (selectedRef && selectedRef.trim().length > 0);
+  const refValid = isHarmonyP6Hw ? manualRefValid : (!hasRefChoices || Boolean(selectedRef));
   const canApply = ioPointsValid && Boolean(selectedIoId) && refValid && ioRefValid && !uploading;
 
   async function handleFileChange(e) {
@@ -80,7 +94,7 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
       <div className="bg-white rounded-2xl p-6 w-full max-w-md">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">{hw.Name} - IO Setup</h3>
 
-        {isHarmonyP6 ? (
+        {isHarmonyP6Hw ? (
           <div className="mb-4">
             <p className="text-sm text-gray-600 mb-1">Reference number:</p>
             <p className="text-xs text-gray-500 mb-2">
@@ -124,23 +138,72 @@ export default function HardwarePopup({ hw, onApply, onClose }) {
           </div>
         ) : null}
 
-        <p className="text-sm text-gray-600 mb-2">Choose an IO module:</p>
-        <div className="flex flex-col gap-2 mb-4 max-h-40 overflow-y-auto">
-          {compatibleIo.length === 0 ? (
-            <p className="text-sm text-gray-500">No compatible IO modules found.</p>
-          ) : null}
-          {compatibleIo.map((io) => (
-            <label key={io._id} className="flex items-center gap-2 cursor-pointer">
-              <input
-                type="radio"
-                name="io-module"
-                checked={selectedIoId === io._id}
-                onChange={() => selectIoModule(io._id)}
-              />
-              {io.Name}
-            </label>
+<p className="text-sm text-gray-600 mb-2">Choose an IO module:</p>
+<div className="flex flex-col gap-2 mb-1">
+  {compatibleIo.length === 0 ? (
+    <p className="text-sm text-gray-500">No compatible IO modules found.</p>
+  ) : null}
+
+  {compatibleIo.map((io) => {
+    const isEdgeIo = io.Name && io.Name.toLowerCase().includes("edge io");
+    const isSelected = selectedIoId === io._id;
+    const refCount = io.partNumbers ? io.partNumbers.length : 0;
+
+    if (isEdgeIo) {
+      return (
+        <select
+          key={io._id}
+          value={isSelected && selectedIoRef ? selectedIoRef : ""}
+          onChange={(e) => {
+            selectIoModule(io._id);
+            setSelectedIoRef(e.target.value);
+          }}
+          className={
+            "rounded-lg border px-4 py-3 text-sm font-medium transition cursor-pointer " +
+            (isSelected
+              ? "border-green-600 bg-green-50 text-gray-900"
+              : "border-gray-200 hover:border-green-400 hover:bg-gray-50 text-gray-900")
+          }
+        >
+          <option value="" disabled>
+            Edge IO
+          </option>
+          {(io.partNumbers || []).map((pn) => (
+            <option key={pn.code} value={pn.code}>
+              {pn.code}
+              {pn.label ? ` — ${pn.label}` : ""}
+            </option>
           ))}
-        </div>
+        </select>
+      );
+    }
+
+    return (
+      <button
+        key={io._id}
+        type="button"
+        onClick={() => selectIoModule(io._id)}
+        className={
+          "flex items-center justify-between gap-3 rounded-lg border px-4 py-3 text-left transition " +
+          (isSelected
+            ? "border-green-600 bg-green-50"
+            : "border-gray-200 hover:border-green-400 hover:bg-gray-50")
+        }
+      >
+        <span className="text-sm font-medium text-gray-900 truncate">{io.Name}</span>
+
+        {refCount > 1 ? (
+          <span className="text-xs font-medium text-blue-700 bg-blue-50 rounded-full px-2.5 py-1 flex-shrink-0">
+            {refCount} references
+          </span>
+        ) : null}
+        {refCount === 1 ? (
+          <span className="text-xs font-mono text-gray-500 flex-shrink-0">{io.partNumbers[0].code}</span>
+        ) : null}
+      </button>
+    );
+  })}
+</div>
 
         {hasIoRefChoices ? (
           <div className="mb-4">

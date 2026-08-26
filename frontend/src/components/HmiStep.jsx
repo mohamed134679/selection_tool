@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import { Cpu, Check } from "lucide-react";
+import { isHarmonyP6 } from "../lib/harmonyP6";
 
 export default function HmiStep({
   selectedId,
@@ -39,7 +40,7 @@ export default function HmiStep({
 
   const harmonyP6HwEntry = projectDraft.selectedHw.find((entry) => {
     const hw = hardwareCatalog.find((h) => h._id === entry.hw_id);
-    return Boolean(hw && hw.Name === "Harmony P6");
+    return isHarmonyP6(hw);
   });
   const usedHarmonyP6InControl = Boolean(harmonyP6HwEntry);
 
@@ -57,7 +58,7 @@ export default function HmiStep({
   // Harmony P6 doesn't use a fixed partNumbers list here either — its
   // reference code comes from Schneider's own product configurator, so the
   // user pastes it in manually instead of picking from a preset list.
-  const isHarmonyP6Hmi = Boolean(selectedHmiModel && selectedHmiModel.Name === "Harmony P6");
+  const isHarmonyP6Hmi = isHarmonyP6(selectedHmiModel);
   const hasHmiRefChoices = !isHarmonyP6Hmi && Boolean(
     selectedHmiModel && selectedHmiModel.partNumbers && selectedHmiModel.partNumbers.length > 1
   );
@@ -72,7 +73,7 @@ export default function HmiStep({
       return;
     }
     onSelect(hmi._id);
-    if (hmi.Name === "Harmony P6") {
+    if (isHarmonyP6(hmi)) {
       onSelectHmiRef(null); // user types it in manually
     } else if (hmi.partNumbers && hmi.partNumbers.length === 1) {
       onSelectHmiRef(hmi.partNumbers[0].code);

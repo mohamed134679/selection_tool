@@ -1,6 +1,11 @@
 import { useProjectDraft } from "../context/ProjectDraftContext";
 import { useSearchParams } from "react-router-dom";
 import LockedOverlay from "./LockedOverlay.jsx";
+import {
+  ORCHESTRATION_PACK_SIZES,
+  getOrchestrationPackLines,
+  formatOrchestrationPackName,
+} from "../lib/licensing";
 
 export default function LicenceStep({ onNext }) {
 const { projectDraft, setProjectDraft } = useProjectDraft();
@@ -181,7 +186,10 @@ if (step === "addons") {
 }
     if (step === "orchestration") {
         const nodeCount = projectDraft.licences.orchestration.nodeCount;
-        const nodeCountValid = nodeCount && Number(nodeCount) >= 1 && Number(nodeCount) <= 500;
+        const maxNodes = Math.max(...ORCHESTRATION_PACK_SIZES);
+        const nodeCountValid = nodeCount && Number(nodeCount) >= 1 && Number(nodeCount) <= maxNodes;
+        const previewLines = nodeCountValid ? getOrchestrationPackLines(nodeCount) : [];
+
         return (
             <div>
             <h2 className="text-2xl font-bold text-gray-900 mb-2">Orchestration Licence</h2>
@@ -202,7 +210,7 @@ if (step === "addons") {
             <input
                 type="number"
                 min="1"
-                max="500"
+                max={maxNodes}
                 value={nodeCount || ""}
                 onChange={(e) => updateLicences("orchestration", { nodeCount: e.target.value })}
                 className="border border-gray-300 rounded-lg px-3 py-2 w-48"
@@ -217,6 +225,22 @@ if (step === "addons") {
             >
                 Next
             </button>
+
+            {previewLines.length > 0 && (
+              <div className="mt-6 rounded-xl border border-gray-200 bg-gray-50 p-4 max-w-sm">
+                <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-2">
+                  Licences needed for {nodeCount} node{Number(nodeCount) === 1 ? "" : "s"}
+                </p>
+                <div className="space-y-1">
+                  {previewLines.map((line) => (
+                    <div key={line.size} className="flex items-center justify-between text-sm">
+                      <span className="text-gray-700">{formatOrchestrationPackName(line.size)}</span>
+                      <span className="font-semibold text-gray-900">× {line.quantity}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
             </div>
         );
 

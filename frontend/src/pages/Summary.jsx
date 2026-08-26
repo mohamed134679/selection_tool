@@ -2,7 +2,9 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import LockedOverlay from "../components/LockedOverlay.jsx";
-import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip } from "lucide-react";
+import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check } from "lucide-react";
+import { isHarmonyP6 } from "../lib/harmonyP6";
+import { buildRequiredLicenses } from "../lib/licensing";
 
 const FILE_BASE = "http://localhost:3000";
 
@@ -39,18 +41,6 @@ export default function Summary() {
         return <LockedOverlay />;
     }
 
-    function getControlPackName(ioPoints) {
-        if (!ioPoints) return null;
-        const packs = [10, 100, 1000, 5000];
-        const size = packs.find((max) => Number(ioPoints) <= max);
-        return size ? `Control Pack ${size} IO Points` : null;
-    }
-    function getOrchestrationPackName(nodeCount) {
-        if (!nodeCount) return null;
-        const packs = [1, 10, 100, 500];
-        const size = packs.find((max) => Number(nodeCount) <= max);
-        return size ? `Orchestration Pack ${size} Node${size === 1 ? "" : "s"}` : null;
-    }
     async function createProject() {
         setSaveError(null);
         setSaving(true);
@@ -72,7 +62,7 @@ export default function Summary() {
                     SelectedHw: projectDraft.selectedHw,
                     Hmi_id: projectDraft.hmiId,
                     hmiUsesControlHw: projectDraft.hmiUsesControlHw,
-                  hmiRefNumber: projectDraft.hmiRefNumber, 
+                    hmiRefNumber: projectDraft.hmiRefNumber,
                     licences: projectDraft.licences,
                 }),
             });
@@ -96,51 +86,35 @@ export default function Summary() {
         }
     }
 
-const addonLicenseNames = {
-  "High Availability": "High Availability Add-on",
-  "Asset Link": "Asset Link for AVEVA OMI Add-on",
-  "Procedural Libraries": "Procedural Automation Add-on",
-};
+    const totalIoPoints = projectDraft.selectedHw.reduce(
+        (sum, entry) => sum + (Number(entry.ioPoints) || 0) * (entry.quantity || 1),
+        0
+    );
 
-const protocolLicenseNames = {
-  "Profinet": "Communication Protocol PROFINET RT IO-Controller Client",
-  "IEC 61850": "Communication Protocol IEC 61850",
-  "OPC UA as a client": "Communication Protocol OPC UA Client",
-};
+    // When consolidated onto Harmony P6, there's no separate hmiId — but the
+    // license still belongs to whichever CPU runs HMI services, so we still
+    // look up the Harmony P6 HMI catalog entry purely to pull its license.
+    const activeHmi = projectDraft.hmiUsesControlHw
+        ? hmiOptions.find(isHarmonyP6)
+        : hmiOptions.find((hmi) => hmi._id === projectDraft.hmiId);
 
-const requiredLicenseNames = [];
+    const requiredLicenses = buildRequiredLicenses({
+        buildTimeWanted: projectDraft.licences.buildTime.wanted,
+        buildTimeTier: projectDraft.licences.buildTime.tier,
+        buildTimeAddons: projectDraft.licences.buildTime.addons,
+        totalIoPoints,
+        orchestrationNodeCount: projectDraft.licences.orchestration.nodeCount,
+        protocols: projectDraft.licences.communication.protocols,
+        licenseCatalog,
+        hmiLicenseId: activeHmi?.license,
+    });
 
-if (projectDraft.licences.buildTime.wanted) {
-  requiredLicenseNames.push(`${projectDraft.licences.buildTime.tier} Engineering License`);
-  projectDraft.licences.buildTime.addons.forEach((addon) => {
-    requiredLicenseNames.push(addonLicenseNames[addon]);
-  });
-}
-
-const totalIoPoints = projectDraft.selectedHw.reduce(
-  (sum, entry) => sum + (Number(entry.ioPoints) || 0) * (entry.quantity || 1),
-  0
-);
-const controlPack = getControlPackName(totalIoPoints);
-if (controlPack) requiredLicenseNames.push(controlPack);
-
-const orchestrationPack = getOrchestrationPackName(projectDraft.licences.orchestration.nodeCount);
-if (orchestrationPack) requiredLicenseNames.push(orchestrationPack);
-
-projectDraft.licences.communication.protocols.forEach((protocol) => {
-  requiredLicenseNames.push(protocolLicenseNames[protocol]);
-});
-
-const requiredLicenses = requiredLicenseNames
-  .map((name) => licenseCatalog.find((lic) => lic.name === name))
-  .filter(Boolean);
-
-    const selectedHmi = hmiOptions.find(hmi => hmi._id === projectDraft.hmiId);
-    
-    const hmiLicense = selectedHmi?.license
-        ? licenseCatalog.find((lic) => lic._id === selectedHmi.license)
+    const consolidatedHwRef = projectDraft.hmiUsesControlHw
+        ? projectDraft.selectedHw.find((entry) => {
+            const hw = hardwareCatalog.find((h) => h._id === entry.hw_id);
+            return isHarmonyP6(hw);
+          })?.refNumber
         : null;
-    if (hmiLicense) requiredLicenses.push(hmiLicense);
 
     // Group by hardware + reference number + IO reference number, since two
     // units of the same hardware can now differ on any of those. Each
@@ -164,13 +138,6 @@ const requiredLicenses = requiredLicenseNames
     });
 
     const hwEntries = Object.entries(hwGroups);
-
-        const consolidatedHwRef = projectDraft.hmiUsesControlHw
-        ? projectDraft.selectedHw.find((entry) => {
-            const hw = hardwareCatalog.find((h) => h._id === entry.hw_id);
-            return Boolean(hw && hw.Name === "Harmony P6");
-          })?.refNumber
-        : null;
 
     return (
         <div className="max-w-4xl mx-auto p-8">
@@ -204,6 +171,7 @@ const requiredLicenses = requiredLicenseNames
                             return (
                                 <div key={key} className="rounded-xl border border-gray-200 p-4">
                                     <p className="font-medium text-gray-900">{hw ? hw.Name : hwId}</p>
+
                                     {refNumber && (
                                         <p className="text-xs font-mono text-green-700 mt-1">
                                             Ref: {refNumber}
@@ -240,50 +208,50 @@ const requiredLicenses = requiredLicenseNames
                 )}
             </section>
 
-{/* HMI */}
-<section className="mb-10">
-    <div className="flex items-center gap-2 mb-4">
-        <Monitor className="w-5 h-5 text-green-600" />
-        <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
-    </div>
-    {projectDraft.hmiUsesControlHw ? (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 inline-flex items-center gap-3">
-            <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
-                <Check className="w-4 h-4 text-green-700" />
-            </div>
-            <div>
-                <p className="font-medium text-gray-900">Same as Control/IO hardware</p>
-                <p className="text-sm text-gray-600">Harmony P6 hosts both Control and HMI</p>
-                {consolidatedHwRef && (
-                    <p className="text-xs font-mono text-green-700 mt-1">Ref: {consolidatedHwRef}</p>
+            {/* HMI */}
+            <section className="mb-10">
+                <div className="flex items-center gap-2 mb-4">
+                    <Monitor className="w-5 h-5 text-green-600" />
+                    <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
+                </div>
+                {projectDraft.hmiUsesControlHw ? (
+                    <div className="rounded-xl border border-green-200 bg-green-50 p-4 inline-flex items-center gap-3">
+                        <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
+                            <Check className="w-4 h-4 text-green-700" />
+                        </div>
+                        <div>
+                            <p className="font-medium text-gray-900">Same as Control/IO hardware</p>
+                            <p className="text-sm text-gray-600">Harmony P6 hosts both Control and HMI</p>
+                            {consolidatedHwRef && (
+                                <p className="text-xs font-mono text-green-700 mt-1">Ref: {consolidatedHwRef}</p>
+                            )}
+                        </div>
+                    </div>
+                ) : activeHmi ? (
+                    <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
+                        {activeHmi.image && (
+                            <img
+                                src={activeHmi.image}
+                                alt={activeHmi.Name}
+                                className="w-16 h-16 object-contain"
+                            />
+                        )}
+                        <div>
+                            <p className="font-medium text-gray-900">{activeHmi.Name}</p>
+                            {activeHmi.brand && (
+                                <p className="text-sm text-gray-500">{activeHmi.brand}</p>
+                            )}
+                            {projectDraft.hmiRefNumber && (
+                                <p className="text-xs font-mono text-green-700 mt-1">
+                                    Ref: {projectDraft.hmiRefNumber}
+                                </p>
+                            )}
+                        </div>
+                    </div>
+                ) : (
+                    <p className="text-sm text-gray-500">No HMI selected.</p>
                 )}
-            </div>
-        </div>
-    ) : activeHmi ? (
-        <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
-            {activeHmi.image && (
-                <img
-                    src={activeHmi.image}
-                    alt={activeHmi.Name}
-                    className="w-16 h-16 object-contain"
-                />
-            )}
-            <div>
-                <p className="font-medium text-gray-900">{activeHmi.Name}</p>
-                {activeHmi.brand && (
-                    <p className="text-sm text-gray-500">{activeHmi.brand}</p>
-                )}
-                {projectDraft.hmiRefNumber && (
-                    <p className="text-xs font-mono text-green-700 mt-1">
-                        Ref: {projectDraft.hmiRefNumber}
-                    </p>
-                )}
-            </div>
-        </div>
-    ) : (
-        <p className="text-sm text-gray-500">No HMI selected.</p>
-    )}
-</section>  
+            </section>
 
             {/* Licences */}
             <section className="mb-10">
@@ -335,10 +303,17 @@ const requiredLicenses = requiredLicenseNames
                     <p className="text-sm text-gray-500">No licences required.</p>
                 ) : (
                     <div className="space-y-3">
-                        {requiredLicenses.map((lic) => (
+                        {requiredLicenses.map(({ lic, quantity }) => (
                             <div key={lic._id} className="rounded-xl border border-gray-200 p-4">
                                 <div className="flex items-start justify-between gap-4 mb-1">
-                                    <p className="font-semibold text-gray-900">{lic.name}</p>
+                                    <p className="font-semibold text-gray-900 flex items-center gap-2">
+                                        {lic.name}
+                                        {quantity > 1 && (
+                                            <span className="text-xs font-semibold text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+                                                × {quantity}
+                                            </span>
+                                        )}
+                                    </p>
                                     <span className="flex-shrink-0 text-xs font-mono text-green-700 bg-green-50 rounded-full px-2.5 py-1">
                                         {lic.reference_no}
                                     </span>

@@ -9,41 +9,19 @@ import {
   User,
   Trash2,
   Paperclip,
+  Check,
 } from "lucide-react";
+import { isHarmonyP6 } from "../lib/harmonyP6";
+import { buildRequiredLicenses } from "../lib/licensing";
 
 const FILE_BASE = "http://localhost:3000";
-
-const addonLicenseNames = {
-  "High Availability": "High Availability Add-on",
-  "Asset Link": "Asset Link for AVEVA OMI Add-on",
-  "Procedural Libraries": "Procedural Automation Add-on",
-};
-
-const protocolLicenseNames = {
-  Profinet: "Communication Protocol PROFINET RT IO-Controller Client",
-  "IEC 61850": "Communication Protocol IEC 61850",
-  "OPC UA as a client": "Communication Protocol OPC UA Client",
-};
-
-function getControlPackName(ioPoints) {
-  if (!ioPoints) return null;
-  const packs = [10, 100, 1000, 5000];
-  const size = packs.find((max) => Number(ioPoints) <= max);
-  return size ? `Control Pack ${size} IO Points` : null;
-}
-
-function getOrchestrationPackName(nodeCount) {
-  if (!nodeCount) return null;
-  const packs = [1, 10, 100, 500];
-  const size = packs.find((max) => Number(nodeCount) <= max);
-  return size ? `Orchestration Pack ${size} Node${size === 1 ? "" : "s"}` : null;
-}
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
   const [project, setProject] = useState(null);
   const [licenseCatalog, setLicenseCatalog] = useState([]);
+  const [hmiCatalog, setHmiCatalog] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
@@ -80,6 +58,13 @@ export default function ProjectDetail() {
     fetch("http://localhost:3000/license")
       .then((res) => res.json())
       .then(setLicenseCatalog)
+      .catch(() => {});
+  }, []);
+
+  useEffect(() => {
+    fetch("http://localhost:3000/hmi")
+      .then((res) => res.json())
+      .then(setHmiCatalog)
       .catch(() => {});
   }, []);
 
@@ -138,29 +123,26 @@ export default function ProjectDetail() {
     0
   );
 
-  const requiredLicenseNames = [];
-  if (buildTime.wanted) {
-    requiredLicenseNames.push(`${buildTime.tier} Engineering License`);
-    (buildTime.addons || []).forEach((addon) => {
-      requiredLicenseNames.push(addonLicenseNames[addon]);
-    });
-  }
-  const controlPack = getControlPackName(totalIoPoints);
-  if (controlPack) requiredLicenseNames.push(controlPack);
-  const orchestrationPack = getOrchestrationPackName(orchestration.nodeCount);
-  if (orchestrationPack) requiredLicenseNames.push(orchestrationPack);
-  (communication.protocols || []).forEach((protocol) => {
-    requiredLicenseNames.push(protocolLicenseNames[protocol]);
+  // When consolidated onto Harmony P6, project.Hmi_id is null — fall back to
+  // the Harmony P6 catalog entry purely to attribute its license, if any.
+  const activeHmi = project.hmiUsesControlHw
+    ? hmiCatalog.find(isHarmonyP6)
+    : project.Hmi_id;
+
+  const requiredLicenses = buildRequiredLicenses({
+    buildTimeWanted: buildTime.wanted,
+    buildTimeTier: buildTime.tier,
+    buildTimeAddons: buildTime.addons,
+    totalIoPoints,
+    orchestrationNodeCount: orchestration.nodeCount,
+    protocols: communication.protocols,
+    licenseCatalog,
+    hmiLicenseId: activeHmi?.license,
   });
 
-  const requiredLicenses = requiredLicenseNames
-    .map((name) => licenseCatalog.find((lic) => lic.name === name))
-    .filter(Boolean);
-
-  if (project.Hmi_id?.license) {
-    const hmiLicense = licenseCatalog.find((lic) => lic._id === project.Hmi_id.license);
-    if (hmiLicense) requiredLicenses.push(hmiLicense);
-  }
+  const consolidatedHwRef = project.hmiUsesControlHw
+    ? (project.SelectedHw || []).find((entry) => isHarmonyP6(entry.hw_id))?.refNumber
+    : null;
 
   // Group by hardware + reference number + IO reference number, since two
   // units of the same hardware can differ on any of those. Each group also
@@ -185,13 +167,6 @@ export default function ProjectDetail() {
       hwGroups[key].attachments.push(entry.attachmentUrl);
     }
   });
-
-    const consolidatedHwRef = project.hmiUsesControlHw
-    ? (project.SelectedHw || []).find((entry) => {
-        const hw = entry.hw_id;
-        return Boolean(hw && hw.Name === "Harmony P6");
-      })?.refNumber
-    : null;
 
   return (
     <div className="max-w-4xl mx-auto p-8">
@@ -282,48 +257,48 @@ export default function ProjectDetail() {
         )}
       </section>
 
-{/* HMI */}
-<section className="mb-10">
-    <div className="flex items-center gap-2 mb-4">
-        <Monitor className="w-5 h-5 text-green-600" />
-        <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
-    </div>
-    {project.hmiUsesControlHw ? (
-        <div className="rounded-xl border border-green-200 bg-green-50 p-4 inline-flex items-center gap-3">
+      {/* HMI */}
+      <section className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+          <Monitor className="w-5 h-5 text-green-600" />
+          <h2 className="text-lg font-semibold text-gray-900">HMI</h2>
+        </div>
+        {project.hmiUsesControlHw ? (
+          <div className="rounded-xl border border-green-200 bg-green-50 p-4 inline-flex items-center gap-3">
             <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-green-200">
-                <Check className="w-4 h-4 text-green-700" />
+              <Check className="w-4 h-4 text-green-700" />
             </div>
             <div>
-                <p className="font-medium text-gray-900">Same as Control/IO hardware</p>
-                <p className="text-sm text-gray-600">Harmony P6 hosts both Control and HMI</p>
-                {consolidatedHwRef && (
-                    <p className="text-xs font-mono text-green-700 mt-1">Ref: {consolidatedHwRef}</p>
-                )}
+              <p className="font-medium text-gray-900">Same as Control/IO hardware</p>
+              <p className="text-sm text-gray-600">Harmony P6 hosts both Control and HMI</p>
+              {consolidatedHwRef && (
+                <p className="text-xs font-mono text-green-700 mt-1">Ref: {consolidatedHwRef}</p>
+              )}
             </div>
-        </div>
-    ) : project.Hmi_id ? (
-        <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
+          </div>
+        ) : project.Hmi_id ? (
+          <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
             {project.Hmi_id.image && (
-                <img
-                    src={project.Hmi_id.image}
-                    alt={project.Hmi_id.Name}
-                    className="w-16 h-16 object-contain"
-                />
+              <img
+                src={project.Hmi_id.image}
+                alt={project.Hmi_id.Name}
+                className="w-16 h-16 object-contain"
+              />
             )}
             <div>
-                <p className="font-medium text-gray-900">{project.Hmi_id.Name}</p>
-                <p className="text-sm text-gray-500">{project.Hmi_id.brand}</p>
-                {project.hmiRefNumber && (
-                    <p className="text-xs font-mono text-green-700 mt-1">
-                        Ref: {project.hmiRefNumber}
-                    </p>
-                )}
+              <p className="font-medium text-gray-900">{project.Hmi_id.Name}</p>
+              <p className="text-sm text-gray-500">{project.Hmi_id.brand}</p>
+              {project.hmiRefNumber && (
+                <p className="text-xs font-mono text-green-700 mt-1">
+                  Ref: {project.hmiRefNumber}
+                </p>
+              )}
             </div>
-        </div>
-    ) : (
-        <p className="text-sm text-gray-500">No HMI selected.</p>
-    )}
-</section>
+          </div>
+        ) : (
+          <p className="text-sm text-gray-500">No HMI selected.</p>
+        )}
+      </section>
 
       {/* Licences */}
       <section className="mb-10">
@@ -366,12 +341,19 @@ export default function ProjectDetail() {
           <p className="text-sm text-gray-500">No licences required.</p>
         ) : (
           <div className="space-y-2">
-            {requiredLicenses.map((lic) => (
+            {requiredLicenses.map(({ lic, quantity }) => (
               <div
                 key={lic._id}
                 className="rounded-xl border border-gray-200 p-4 flex items-center justify-between"
               >
-                <span className="font-medium text-gray-900">{lic.name}</span>
+                <span className="font-medium text-gray-900 flex items-center gap-2">
+                  {lic.name}
+                  {quantity > 1 && (
+                    <span className="text-xs font-semibold text-green-700 bg-green-50 rounded-full px-2 py-0.5">
+                      × {quantity}
+                    </span>
+                  )}
+                </span>
                 <span className="text-sm text-gray-400 font-mono">{lic.reference_no}</span>
               </div>
             ))}
