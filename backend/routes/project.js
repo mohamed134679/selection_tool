@@ -1,3 +1,5 @@
+// project.js
+
 const express = require('express');
 const router = express.Router();
 
@@ -63,7 +65,11 @@ router.get('/:id', requireAuth, async (req, res) => {
     }
 });
 
-// Update a project — only its creator may edit it
+// Update a project — only its creator may edit it. Any edit here means
+// the owner is resubmitting (whether it was 'pending', 'needs_edit', or
+// even 'approved'), so review state always resets to 'pending' and any
+// client-supplied review fields are ignored — only admins set those,
+// via PATCH /admin/projects/:id/review.
 router.put('/:id', requireAuth, async (req, res) => {
     try {
         const existing = await Project.findById(req.params.id);
@@ -74,8 +80,11 @@ router.put('/:id', requireAuth, async (req, res) => {
             return res.status(403).json({ message: 'You do not have access to this project' });
         }
 
-        // createdBy is never editable via the client, regardless of what's sent
-        const { createdBy, ...updates } = req.body;
+        const { createdBy, reviewStatus, reviewComment, reviewedBy, reviewedAt, ...updates } = req.body;
+        updates.reviewStatus = 'pending';
+        updates.reviewComment = '';
+        updates.reviewedBy = null;
+        updates.reviewedAt = null;
 
         const updatedProject = await Project.findByIdAndUpdate(
             req.params.id,

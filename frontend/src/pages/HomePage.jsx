@@ -26,6 +26,7 @@ export default function HomePage() {
       description,
       locked: false,
       justCreated: false,
+      editingProjectId: null,
       selectedHw: [],
       hmiId: null,
       hmiUsesControlHw: false,

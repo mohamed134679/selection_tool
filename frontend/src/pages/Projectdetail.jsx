@@ -1,3 +1,4 @@
+//projectdetail.jsx
 import { useEffect, useState } from "react";
 import { useParams, Link, useNavigate } from "react-router-dom";
 import {
@@ -10,15 +11,21 @@ import {
   Trash2,
   Paperclip,
   Check,
+  Pencil,
+  AlertCircle,
 } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
+import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
+import StatusBadge from "../components/StatusBadge.jsx";
+import { authFetch } from "../api.js";
 
 const FILE_BASE = "http://localhost:3000";
 
 export default function ProjectDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
+  const { loadProjectForEdit } = useProjectDraft();
   const [project, setProject] = useState(null);
   const [licenseCatalog, setLicenseCatalog] = useState([]);
   const [hmiCatalog, setHmiCatalog] = useState([]);
@@ -26,17 +33,14 @@ export default function ProjectDetail() {
   const [error, setError] = useState(null);
   const [deleting, setDeleting] = useState(false);
 
-  useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
+useEffect(() => {
+    if (!localStorage.getItem("accessToken")) {
       setError("You must be signed in to view this project.");
       setLoading(false);
       return;
     }
 
-    fetch(`http://localhost:3000/projects/${id}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    authFetch(`http://localhost:3000/projects/${id}`)
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -68,14 +72,12 @@ export default function ProjectDetail() {
       .catch(() => {});
   }, []);
 
-  async function handleDelete() {
+async function handleDelete() {
     if (!window.confirm(`Delete "${project.name}"? This can't be undone.`)) return;
     setDeleting(true);
     try {
-      const accessToken = localStorage.getItem("accessToken");
-      const res = await fetch(`http://localhost:3000/projects/${id}`, {
+      const res = await authFetch(`http://localhost:3000/projects/${id}`, {
         method: "DELETE",
-        headers: { Authorization: `Bearer ${accessToken}` },
       });
       if (!res.ok) {
         const body = await res.json().catch(() => ({}));
@@ -86,6 +88,11 @@ export default function ProjectDetail() {
       setDeleting(false);
       alert(err.message);
     }
+  }
+
+  function handleEditAndResubmit() {
+    loadProjectForEdit(project);
+    navigate("/hardware");
   }
 
   if (loading) {
@@ -129,6 +136,12 @@ export default function ProjectDetail() {
     ? hmiCatalog.find(isHarmonyP6)
     : project.Hmi_id;
 
+// populated hardware document (routes/projects.js populates
+  // SelectedHw.hw_id), so no separate catalog lookup is needed.
+  const hardwareLicenseIds = (project.SelectedHw || [])
+    .map((entry) => entry.hw_id?.license)
+    .filter(Boolean);
+
   const requiredLicenses = buildRequiredLicenses({
     buildTimeWanted: buildTime.wanted,
     buildTimeTier: buildTime.tier,
@@ -138,6 +151,7 @@ export default function ProjectDetail() {
     protocols: communication.protocols,
     licenseCatalog,
     hmiLicenseId: activeHmi?.license,
+    hardwareLicenseIds,
   });
 
   const consolidatedHwRef = project.hmiUsesControlHw
@@ -175,17 +189,43 @@ export default function ProjectDetail() {
         Back to projects
       </Link>
 
-      <div className="flex items-start justify-between mb-2">
-        <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
-        <button
-          onClick={handleDelete}
-          disabled={deleting}
-          className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 transition disabled:opacity-50"
-        >
-          <Trash2 className="w-4 h-4" />
-          {deleting ? "Deleting..." : "Delete"}
-        </button>
+      <div className="flex items-start justify-between mb-2 gap-4">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-3xl font-bold text-gray-900">{project.name}</h1>
+          <StatusBadge status={project.reviewStatus} />
+        </div>
+        <div className="flex items-center gap-2 flex-shrink-0">
+          {project.reviewStatus === "needs_edit" && (
+            <button
+              onClick={handleEditAndResubmit}
+              className="inline-flex items-center gap-1.5 text-sm text-green-700 border border-green-200 hover:bg-green-50 rounded-lg px-3 py-1.5 transition"
+            >
+              <Pencil className="w-4 h-4" />
+              Edit & Resubmit
+            </button>
+          )}
+          <button
+            onClick={handleDelete}
+            disabled={deleting}
+            className="inline-flex items-center gap-1.5 text-sm text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg px-3 py-1.5 transition disabled:opacity-50"
+          >
+            <Trash2 className="w-4 h-4" />
+            {deleting ? "Deleting..." : "Delete"}
+          </button>
+        </div>
       </div>
+
+      {project.reviewStatus === "needs_edit" && project.reviewComment && (
+        <div className="mb-6 rounded-xl border border-red-100 bg-red-50 p-4 flex items-start gap-3">
+          <AlertCircle className="w-4 h-4 text-red-700 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-xs font-semibold text-red-700 uppercase tracking-wider mb-1">
+              Admin requested changes
+            </p>
+            <p className="text-sm text-red-800">{project.reviewComment}</p>
+          </div>
+        </div>
+      )}
 
       {project.description && (
         <p className="text-gray-600 mb-4">{project.description}</p>
@@ -202,12 +242,13 @@ export default function ProjectDetail() {
               })
             : "Unknown date"}
         </span>
-        {project.createdBy?.username && (
-          <span className="inline-flex items-center gap-1.5">
-            <User className="w-4 h-4" />
-            {project.createdBy.username}
-          </span>
-        )}
+{(project.createdBy?.username || project.createdByUsername) && (
+  <span className="inline-flex items-center gap-1.5">
+    <User className="w-4 h-4" />
+    {project.createdBy?.username || project.createdByUsername}
+    {!project.createdBy && <span className="text-gray-400 italic ml-1">(deleted)</span>}
+  </span>
+)}
       </div>
 
       {/* Hardware */}

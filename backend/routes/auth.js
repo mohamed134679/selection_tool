@@ -1,3 +1,5 @@
+// auth.js
+
 const express = require('express');
 const bcrypt = require('bcrypt');
 const rateLimit = require('express-rate-limit');
@@ -23,6 +25,16 @@ async function requireAuth(req, res, next) {
     return res.status(401).json({ message: 'Invalid or expired access token' });
   }
 }
+
+// Must run after requireAuth, since it reads req.user. Chain as:
+// router.post('/x', requireAuth, requireAdmin, handler)
+function requireAdmin(req, res, next) {
+  if (!req.user || req.user.role !== 'admin') {
+    return res.status(403).json({ message: 'Admin access required' });
+  }
+  next();
+}
+
 const {
   signAccessToken,
   signRefreshToken,
@@ -58,10 +70,6 @@ router.post('/register', validateRegister, async (req, res) => {
     accountType: accountType || 'employee',
   });
 
-  // Partner approval isn't required yet — everyone gets instant access.
-  // To gate this later: create partner accounts with status: 'pending'
-  // and return 202 instead of issuing tokens below.
-
   const accessToken = signAccessToken(user);
   const refreshToken = signRefreshToken(user);
 
@@ -79,8 +87,6 @@ router.post('/login', loginLimiter, validateLogin, async (req, res) => {
 
   const user = await User.findOne({ username });
 
-  // Compare against a dummy hash even when no user is found, so response
-  // timing doesn't reveal whether a username is registered.
   const passwordHash = user?.password_hash || '$2a$10$invalidsaltinvalidsaltinvalidsal';
   const passwordMatches = await bcrypt.compare(password, passwordHash);
 
@@ -132,8 +138,6 @@ router.post('/logout', async (req, res) => {
   if (token) {
     try {
       const payload = verifyRefreshToken(token);
-      // Bump the token version so this refresh token (and any other
-      // outstanding ones) can no longer be used.
       await User.findByIdAndUpdate(payload.sub, { $inc: { refreshTokenVersion: 1 } });
     } catch {
       // token already invalid/expired — nothing to revoke
@@ -149,6 +153,5 @@ router.get('/me', requireAuth, async (req, res) => {
 });
 
 module.exports = router;
-// Also expose the middleware itself (as a property on the router function)
-// so other route files can do: const { requireAuth } = require('./auth');
 module.exports.requireAuth = requireAuth;
+module.exports.requireAdmin = requireAdmin;

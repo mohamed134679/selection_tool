@@ -1,10 +1,13 @@
+//summary.jsx
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
+import { authFetch } from "../api.js";
 import LockedOverlay from "../components/LockedOverlay.jsx";
-import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check } from "lucide-react";
+import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check, Pencil } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
+
 
 const FILE_BASE = "http://localhost:3000";
 
@@ -17,6 +20,7 @@ export default function Summary() {
     const [saveError, setSaveError] = useState(null);
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
+    const [wasEditing, setWasEditing] = useState(false);
 
     useEffect(() => {
         fetch("http://localhost:3000/hardware")
@@ -41,31 +45,39 @@ export default function Summary() {
         return <LockedOverlay />;
     }
 
-    async function createProject() {
+    const isEditing = Boolean(projectDraft.editingProjectId);
+
+    async function saveProject() {
         setSaveError(null);
         setSaving(true);
+        setWasEditing(isEditing);
         try {
             const accessToken = localStorage.getItem("accessToken");
             if (!accessToken) {
                 throw new Error("You must be signed in to create a project.");
             }
 
-            const res = await fetch("http://localhost:3000/projects", {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${accessToken}`,
-                },
-                body: JSON.stringify({
-                    name: projectDraft.name,
-                    description: projectDraft.description,
-                    SelectedHw: projectDraft.selectedHw,
-                    Hmi_id: projectDraft.hmiId,
-                    hmiUsesControlHw: projectDraft.hmiUsesControlHw,
-                    hmiRefNumber: projectDraft.hmiRefNumber,
-                    licences: projectDraft.licences,
-                }),
-            });
+            const payload = {
+                name: projectDraft.name,
+                description: projectDraft.description,
+                SelectedHw: projectDraft.selectedHw,
+                Hmi_id: projectDraft.hmiId,
+                hmiUsesControlHw: projectDraft.hmiUsesControlHw,
+                hmiRefNumber: projectDraft.hmiRefNumber,
+                licences: projectDraft.licences,
+            };
+
+            const url = isEditing
+                ? `http://localhost:3000/projects/${projectDraft.editingProjectId}`
+                : "http://localhost:3000/projects";
+
+const res = await authFetch(url, {
+    method: isEditing ? "PUT" : "POST",
+    headers: {
+        "Content-Type": "application/json",
+    },
+    body: JSON.stringify(payload),
+});
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
                 // Access token missing/expired — send the user back to sign in
@@ -74,11 +86,17 @@ export default function Summary() {
                     navigate("/login");
                     return;
                 }
-                throw new Error(body.message || "Failed to create project");
+                throw new Error(body.message || (isEditing ? "Failed to save changes" : "Failed to create project"));
             }
+            const savedProject = await res.json();
             setSaved(true);
-            setProjectDraft((prev) => ({ ...prev, locked: true, justCreated: true }));
-            navigate("/home", { replace: true });
+            setProjectDraft((prev) => ({
+                ...prev,
+                locked: true,
+                justCreated: !isEditing,
+                editingProjectId: null,
+            }));
+            navigate(isEditing ? `/projects/${savedProject._id}` : "/home", { replace: true });
         } catch (err) {
             setSaveError(err.message);
         } finally {
@@ -98,16 +116,26 @@ export default function Summary() {
         ? hmiOptions.find(isHarmonyP6)
         : hmiOptions.find((hmi) => hmi._id === projectDraft.hmiId);
 
-    const requiredLicenses = buildRequiredLicenses({
-        buildTimeWanted: projectDraft.licences.buildTime.wanted,
-        buildTimeTier: projectDraft.licences.buildTime.tier,
-        buildTimeAddons: projectDraft.licences.buildTime.addons,
-        totalIoPoints,
-        orchestrationNodeCount: projectDraft.licences.orchestration.nodeCount,
-        protocols: projectDraft.licences.communication.protocols,
-        licenseCatalog,
-        hmiLicenseId: activeHmi?.license,
-    });
+// One entry per selected hardware unit that has an associated license.
+// Redundant hardware pushes two identical SelectedHw entries (see
+// Hardware.jsx's addHardware), so this array naturally contains that
+// license's id twice — buildRequiredLicenses sums it to quantity 2
+// without any redundancy-specific code.
+const hardwareLicenseIds = projectDraft.selectedHw
+    .map((entry) => hardwareCatalog.find((h) => h._id === entry.hw_id)?.license)
+    .filter(Boolean);
+
+const requiredLicenses = buildRequiredLicenses({
+    buildTimeWanted: projectDraft.licences.buildTime.wanted,
+    buildTimeTier: projectDraft.licences.buildTime.tier,
+    buildTimeAddons: projectDraft.licences.buildTime.addons,
+    totalIoPoints,
+    orchestrationNodeCount: projectDraft.licences.orchestration.nodeCount,
+    protocols: projectDraft.licences.communication.protocols,
+    licenseCatalog,
+    hmiLicenseId: activeHmi?.license,
+    hardwareLicenseIds,
+});
 
     const consolidatedHwRef = projectDraft.hmiUsesControlHw
         ? projectDraft.selectedHw.find((entry) => {
@@ -144,7 +172,7 @@ export default function Summary() {
             {/* Header */}
             <div className="mb-10">
                 <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
-                    Final Step
+                    {isEditing ? "Editing Project" : "Final Step"}
                 </p>
                 <h1 className="text-3xl font-bold text-gray-900 mb-2">
                     {projectDraft.name || "Project Summary"}
@@ -153,6 +181,14 @@ export default function Summary() {
                     <p className="text-gray-600">{projectDraft.description}</p>
                 ) : (
                     <p className="text-gray-400 italic">No description provided</p>
+                )}
+                {isEditing && (
+                    <div className="mt-4 rounded-xl border border-green-100 bg-green-50 p-4 flex items-start gap-3">
+                        <Pencil className="w-4 h-4 text-green-700 mt-0.5 flex-shrink-0" />
+                        <p className="text-sm text-gray-700">
+                            You're editing an existing project. Saving will resubmit it for admin review.
+                        </p>
+                    </div>
                 )}
             </div>
 
@@ -338,17 +374,19 @@ export default function Summary() {
                 {saved ? (
                     <p className="flex items-center gap-2 text-green-700 font-medium">
                         <CheckCircle2 className="w-5 h-5" />
-                        Project created!
+                        {wasEditing ? "Changes saved and resubmitted for review!" : "Project created!"}
                     </p>
                 ) : (
                     <button
                         disabled={!projectDraft.name || saving}
-                        onClick={createProject}
+                        onClick={saveProject}
                         className={`rounded-lg bg-green-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-green-700 transition ${
                             !projectDraft.name || saving ? "opacity-40 cursor-not-allowed" : ""
                         }`}
                     >
-                        {saving ? "Creating..." : "Create Project"}
+                        {saving
+                            ? (isEditing ? "Saving..." : "Creating...")
+                            : (isEditing ? "Save & Resubmit" : "Create Project")}
                     </button>
                 )}
             </div>

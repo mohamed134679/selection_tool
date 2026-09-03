@@ -1,17 +1,7 @@
 const express = require("express");
 const router = express.Router();
 const License = require("../schemas/License_schema");
-
-// Create a new license
-router.post("/", async (req, res) => {
-  try {
-    const newLicense = new License(req.body);
-    await newLicense.save();
-    res.status(201).json(newLicense);
-  } catch (err) {
-    res.status(500).json({ message: err.message });
-  }
-});
+const { requireAuth, requireAdmin } = require("./auth");
 
 // Get all licenses
 router.get("/", async (req, res) => {
@@ -36,8 +26,18 @@ router.get("/:id", async (req, res) => {
   }
 });
 
-// Update a license
-router.put("/:id", async (req, res) => {
+// Admin only below
+router.post("/", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const newLicense = new License(req.body);
+    await newLicense.save();
+    res.status(201).json(newLicense);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.put("/:id", requireAuth, requireAdmin, async (req, res) => {
   try {
     const updatedLicense = await License.findByIdAndUpdate(
       req.params.id,
@@ -48,6 +48,18 @@ router.put("/:id", async (req, res) => {
       return res.status(404).json({ message: "License not found" });
     }
     res.json(updatedLicense);
+  } catch (err) {
+    res.status(500).json({ message: err.message });
+  }
+});
+
+router.delete("/:id", requireAuth, requireAdmin, async (req, res) => {
+  try {
+    const deleted = await License.findByIdAndDelete(req.params.id);
+    if (!deleted) {
+      return res.status(404).json({ message: "License not found" });
+    }
+    res.json({ message: "License deleted successfully" });
   } catch (err) {
     res.status(500).json({ message: err.message });
   }

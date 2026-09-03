@@ -14,20 +14,14 @@ import Licence from "./pages/Licence";
 import {ProjectDraftProvider, useProjectDraft} from "./context/ProjectDraftContext.jsx";
 import Summary from "./pages/Summary.jsx";
 import Hardware from "./pages/Hardware.jsx";
+import HardwareCatalog from "./pages/HardwareCatalog.jsx";
 import Projects from "./pages/Projects.jsx";
 import ProjectDetail from "./pages/ProjectDetail.jsx";
 import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
-import HardwareCatalog from "./pages/HardwareCatalog.jsx";
+import RequireAdmin from "./components/RequireAdmin.jsx";
+import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 
-// Runs INSIDE ProjectDraftProvider so it can read `locked`. Once a project
-// has been created, the WIZARD routes specifically should redirect home so
-// the user can't re-enter a stale wizard with an already-submitted draft.
-// Everything else (home, login, register, viewing projects) should always
-// be reachable. Listing the routes that SHOULD be blocked (rather than
-// trying to list every route that should be allowed) means new pages added
-// later are reachable by default instead of silently getting swept into
-// the lock by accident.
 const WIZARD_PATHS = ["/hardware", "/hmi", "/licence", "/summary", "/projects/new"];
 
 function AppRoutes() {
@@ -54,6 +48,14 @@ function AppRoutes() {
       <Route path="/hmi" element={<Hmi />} />
       <Route path="/licence" element={<Licence />} />
       <Route path="/summary" element={<Summary />} />
+      <Route
+        path="/admin"
+        element={
+          <RequireAdmin>
+            <AdminDashboard />
+          </RequireAdmin>
+        }
+      />
     </Routes>
   );
 }
@@ -73,7 +75,6 @@ function AppShell() {
 
 function App() {
   useEffect(() => {
-    // enable the app theme by default; pages can override it
     document.body.setAttribute("data-theme", "app");
     return () => document.body.removeAttribute("data-theme");
   }, []);

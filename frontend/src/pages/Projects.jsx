@@ -1,23 +1,23 @@
+//projects.jsx
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { FolderOpen, Cpu, Monitor, ShieldCheck, Calendar, ArrowRight } from "lucide-react";
+import StatusBadge from "../components/StatusBadge.jsx";
+import { authFetch } from "../api.js";
 
 export default function Projects() {
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
-  useEffect(() => {
-    const accessToken = localStorage.getItem("accessToken");
-    if (!accessToken) {
+useEffect(() => {
+    if (!localStorage.getItem("accessToken")) {
       setError("You must be signed in to view your projects.");
       setLoading(false);
       return;
     }
 
-    fetch("http://localhost:3000/projects", {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    })
+    authFetch("http://localhost:3000/projects")
       .then(async (res) => {
         if (!res.ok) {
           const body = await res.json().catch(() => ({}));
@@ -94,11 +94,15 @@ export default function Projects() {
                 to={`/projects/${project._id}`}
                 className="group flex flex-col rounded-2xl border border-gray-200 bg-white p-6 hover:border-green-600 hover:shadow-md transition"
               >
-                <div className="flex items-start justify-between mb-3">
+                <div className="flex items-start justify-between mb-3 gap-2">
                   <h3 className="text-lg font-semibold text-gray-900 line-clamp-1">
                     {project.name}
                   </h3>
                   <ArrowRight className="w-4 h-4 text-gray-300 group-hover:text-green-600 group-hover:translate-x-0.5 transition flex-shrink-0 mt-1" />
+                </div>
+
+                <div className="mb-3">
+                  <StatusBadge status={project.reviewStatus} />
                 </div>
 
                 {project.description ? (

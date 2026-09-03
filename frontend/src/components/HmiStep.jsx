@@ -3,6 +3,34 @@ import { Button } from "@/components/ui/button";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import { Cpu, Check } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
+import ReferenceNumberPicker from "../components/ReferenceNumberPicker.jsx";
+
+function RefModeToggle({ mode, onChange }) {
+  return (
+    <div className="inline-flex rounded-full border border-gray-200 p-0.5 mb-3">
+      <button
+        type="button"
+        onClick={() => onChange("list")}
+        className={
+          "text-xs font-medium rounded-full px-3 py-1.5 transition " +
+          (mode === "list" ? "bg-green-600 text-white" : "text-gray-600 hover:bg-gray-50")
+        }
+      >
+        Choose from list
+      </button>
+      <button
+        type="button"
+        onClick={() => onChange("manual")}
+        className={
+          "text-xs font-medium rounded-full px-3 py-1.5 transition " +
+          (mode === "manual" ? "bg-green-600 text-white" : "text-gray-600 hover:bg-gray-50")
+        }
+      >
+        Enter manually
+      </button>
+    </div>
+  );
+}
 
 export default function HmiStep({
   selectedId,
@@ -18,6 +46,7 @@ export default function HmiStep({
   const [hardwareCatalog, setHardwareCatalog] = useState([]);
   const [error, setError] = useState(null);
   const [brand, setBrand] = useState(null);
+  const [hmiRefMode, setHmiRefMode] = useState(null); // 'list' | 'manual' | null — Harmony P6 only
 
   useEffect(() => {
     fetch("http://localhost:3000/hmi")
@@ -55,26 +84,38 @@ export default function HmiStep({
 
   const selectedHmiModel = hmiOptions.find((h) => h._id === selectedId) || null;
 
-  // Harmony P6 doesn't use a fixed partNumbers list here either — its
-  // reference code comes from Schneider's own product configurator, so the
-  // user pastes it in manually instead of picking from a preset list.
   const isHarmonyP6Hmi = isHarmonyP6(selectedHmiModel);
+  const p6HasFixedRefs = Boolean(selectedHmiModel?.partNumbers && selectedHmiModel.partNumbers.length > 0);
   const hasHmiRefChoices = !isHarmonyP6Hmi && Boolean(
     selectedHmiModel && selectedHmiModel.partNumbers && selectedHmiModel.partNumbers.length > 1
   );
-  const manualHmiRefValid = !isHarmonyP6Hmi || (hmiRefNumber && hmiRefNumber.trim().length > 0);
-  const hmiRefValid = isHarmonyP6Hmi ? manualHmiRefValid : (!hasHmiRefChoices || Boolean(hmiRefNumber));
+
+  let hmiRefValid;
+  if (isHarmonyP6Hmi) {
+    if (hmiRefMode === "list") hmiRefValid = Boolean(hmiRefNumber);
+    else if (hmiRefMode === "manual") hmiRefValid = Boolean(hmiRefNumber && hmiRefNumber.trim().length > 0);
+    else hmiRefValid = false;
+  } else {
+    hmiRefValid = !hasHmiRefChoices || Boolean(hmiRefNumber);
+  }
   const canAdvance = Boolean(selectedId) && hmiRefValid;
+
+  function switchHmiRefMode(mode) {
+    setHmiRefMode(mode);
+    onSelectHmiRef(null);
+  }
 
   function selectHmiModel(hmi) {
     if (selectedId === hmi._id) {
       onSelect(null);
       onSelectHmiRef(null);
+      setHmiRefMode(null);
       return;
     }
     onSelect(hmi._id);
+    setHmiRefMode(null);
     if (isHarmonyP6(hmi)) {
-      onSelectHmiRef(null); // user types it in manually
+      onSelectHmiRef(null); // user chooses list/manual next
     } else if (hmi.partNumbers && hmi.partNumbers.length === 1) {
       onSelectHmiRef(hmi.partNumbers[0].code);
     } else {
@@ -207,25 +248,46 @@ export default function HmiStep({
 
       {isHarmonyP6Hmi ? (
         <div className="mb-6">
-          <p className="text-sm text-gray-600 mb-1">Reference number:</p>
-          <p className="text-xs text-gray-500 mb-2">
-            Configure your Harmony P6 on the Schneider Electric product page below, then paste the product code you were given.
-          </p>
-          <a
-            href="https://www.se.com/eg/en/product-range/22953172-harmony-p6/#products"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="text-green-700 hover:underline font-medium text-xs block mb-2"
-          >
-            Open Schneider Electric product page
-          </a>
-          <input
-            type="text"
-            value={hmiRefNumber || ""}
-            onChange={(e) => onSelectHmiRef(e.target.value)}
-            placeholder="e.g. HMIP6CTO..."
-            className="border border-gray-300 rounded-lg px-3 py-2 w-full font-mono text-sm"
-          />
+          <p className="text-sm text-gray-600 mb-2">Reference number:</p>
+          <RefModeToggle mode={hmiRefMode} onChange={switchHmiRefMode} />
+
+          {hmiRefMode === "list" ? (
+            p6HasFixedRefs ? (
+              <ReferenceNumberPicker
+                options={selectedHmiModel.partNumbers}
+                selectedCode={hmiRefNumber}
+                onSelect={onSelectHmiRef}
+                name="hmi-ref-number-list"
+              />
+            ) : (
+              <p className="text-sm text-gray-500 italic">
+                No fixed references available yet — switch to "Enter manually" instead.
+              </p>
+            )
+          ) : null}
+
+          {hmiRefMode === "manual" ? (
+            <>
+              <p className="text-xs text-gray-500 mb-2">
+                Configure your Harmony P6 on the Schneider Electric product page below, then paste the product code you were given.
+              </p>
+              <a
+                href="https://www.se.com/eg/en/product-range/22953172-harmony-p6/#products"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-green-700 hover:underline font-medium text-xs block mb-2"
+              >
+                Open Schneider Electric product page
+              </a>
+              <input
+                type="text"
+                value={hmiRefNumber || ""}
+                onChange={(e) => onSelectHmiRef(e.target.value)}
+                placeholder="e.g. HMIP6CTO..."
+                className="border border-gray-300 rounded-lg px-3 py-2 w-full font-mono text-sm"
+              />
+            </>
+          ) : null}
         </div>
       ) : null}
 
@@ -234,20 +296,12 @@ export default function HmiStep({
           <p className="text-sm text-gray-600 mb-2">
             Choose a reference number for {selectedHmiModel.Name}:
           </p>
-          <div className="flex flex-col gap-2 max-h-40 overflow-y-auto">
-            {selectedHmiModel.partNumbers.map((pn) => (
-              <label key={pn.code} className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="radio"
-                  name="hmi-ref-number"
-                  checked={hmiRefNumber === pn.code}
-                  onChange={() => onSelectHmiRef(pn.code)}
-                />
-                <span className="font-mono text-sm">{pn.code}</span>
-                {pn.label ? <span className="text-sm text-gray-500">- {pn.label}</span> : null}
-              </label>
-            ))}
-          </div>
+          <ReferenceNumberPicker
+            options={selectedHmiModel.partNumbers}
+            selectedCode={hmiRefNumber}
+            onSelect={onSelectHmiRef}
+            name="hmi-ref-number"
+          />
         </div>
       ) : null}
 

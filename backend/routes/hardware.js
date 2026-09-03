@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 
 const hardware = require('../schemas/hardware_schema');
+const { requireAuth, requireAdmin } = require('./auth');
 
 router.get('/:id', async (req, res) => {
     try {
@@ -37,8 +38,6 @@ router.get('/type/:type', async (req, res) => {
     }
 });
 
-// New: filter the catalog by family (e.g. "ID-PAC"), used by the
-// read-only hardware overview/catalog page
 router.get('/family/:family', async (req, res) => {
     try {
         const hardwareList = await hardware.find({
@@ -51,7 +50,8 @@ router.get('/family/:family', async (req, res) => {
     }
 });
 
-router.post('/', async (req, res) => {
+// Admin only — creates/edits/deletes below
+router.post('/', requireAuth, requireAdmin, async (req, res) => {
     try {
         const newHardware = new hardware(req.body);
         await newHardware.save();
@@ -61,7 +61,7 @@ router.post('/', async (req, res) => {
     }
 });
 
-router.put('/:id', async (req, res) => {
+router.put('/:id', requireAuth, requireAdmin, async (req, res) => {
     try {
         const updatedHardware = await hardware.findByIdAndUpdate(
             req.params.id,
@@ -72,6 +72,18 @@ router.put('/:id', async (req, res) => {
             return res.status(404).json({ message: 'Hardware not found' });
         }
         res.json(updatedHardware);
+    } catch (err) {
+        res.status(500).json({ message: err.message });
+    }
+});
+
+router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
+    try {
+        const deleted = await hardware.findByIdAndDelete(req.params.id);
+        if (!deleted) {
+            return res.status(404).json({ message: 'Hardware not found' });
+        }
+        res.json({ message: 'Hardware deleted successfully' });
     } catch (err) {
         res.status(500).json({ message: err.message });
     }

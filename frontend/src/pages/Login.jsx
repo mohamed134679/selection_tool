@@ -11,16 +11,17 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false)
   const navigate = useNavigate()
 
-  const handleSubmit = (e) => {
+const handleSubmit = (e) => {
     e.preventDefault()
     setLoading(true)
     apiLogin(username, password)
       .then((data) => {
         localStorage.setItem('accessToken', data.accessToken)
         localStorage.setItem('appUsername', username)
-        localStorage.setItem('userId',data.user._id)
+        localStorage.setItem('userId', data.user._id)
+        localStorage.setItem('userRole', data.user.role)
         setLoading(false)
-        navigate('/home')
+        navigate(data.user.role === 'admin' ? '/admin' : '/home')
       })
       .catch((err) => {
         setLoading(false)

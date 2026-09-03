@@ -1,3 +1,5 @@
+// app.js
+
 require('dotenv').config();
 
 const express = require('express');
@@ -86,6 +88,8 @@ const hardwareRoutes = require('./routes/hardware');
 const licenseRoutes = require('./routes/license');
 const path = require('path');
 const uploadsRouter = require('./routes/uploads');
+const adminUsersRoutes = require('./routes/adminUsers');
+const adminProjectsRoutes = require('./routes/adminProjects');
 
 app.use('/auth', authRoutes);
 app.use('/io', ioRoutes);
@@ -95,6 +99,8 @@ app.use('/hardware', hardwareRoutes);
 app.use('/license', licenseRoutes);
 app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serves the actual files
 app.use('/upload', uploadsRouter); // POST endpoint that saves them
+app.use('/admin/users', adminUsersRoutes);
+app.use('/admin/projects', adminProjectsRoutes);
 
 // Catch anything thrown in async route handlers that wasn't already
 // caught locally, so the process doesn't crash on an unhandled rejection

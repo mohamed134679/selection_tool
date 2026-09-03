@@ -1,13 +1,16 @@
 import { Link } from "react-router-dom";
-import { LogOut, Cpu } from "lucide-react";
+import { LogOut, Cpu, ShieldCheck } from "lucide-react";
 
 export default function SiteHeader() {
   const username = localStorage.getItem("appUsername") || "";
   const initial = username.trim().charAt(0).toUpperCase() || "H";
+  const isAdmin = localStorage.getItem("userRole") === "admin";
 
   const handleLogout = () => {
     localStorage.removeItem("accessToken");
     localStorage.removeItem("appUsername");
+    localStorage.removeItem("userId");
+    localStorage.removeItem("userRole");
 
     window.location.href = "/login";
   };
@@ -43,6 +46,17 @@ export default function SiteHeader() {
               Hardware Catalog
             </Link>
 
+            {/* Admin Dashboard link — admins only */}
+            {isAdmin && (
+              <Link
+                to="/admin"
+                className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-green-700 hover:text-green-800 transition"
+              >
+                <ShieldCheck className="w-4 h-4" />
+                Admin Dashboard
+              </Link>
+            )}
+
             {/* Profile */}
             <div className="relative group">
 
@@ -68,6 +82,12 @@ export default function SiteHeader() {
                     <p className="font-semibold text-gray-900 truncate">
                       {username}
                     </p>
+                    {isAdmin && (
+                      <span className="inline-flex items-center gap-1 text-xs font-medium text-green-700 bg-green-50 rounded-full px-2 py-0.5 mt-1.5">
+                        <ShieldCheck className="w-3 h-3" />
+                        Admin
+                      </span>
+                    )}
                   </div>
 
                   {/* Hardware Catalog (mobile) */}
@@ -78,6 +98,17 @@ export default function SiteHeader() {
                     <Cpu className="w-4 h-4" />
                     Hardware Catalog
                   </Link>
+
+                  {/* Admin Dashboard (mobile) — admins only */}
+                  {isAdmin && (
+                    <Link
+                      to="/admin"
+                      className="sm:hidden flex items-center gap-3 px-4 py-3 text-sm text-green-700 hover:bg-green-50 transition"
+                    >
+                      <ShieldCheck className="w-4 h-4" />
+                      Admin Dashboard
+                    </Link>
+                  )}
 
                   {/* Logout */}
                   <button

@@ -88,6 +88,11 @@ export function formatOrchestrationPackName(size) {
  * @param {string[]} params.protocols
  * @param {Array} params.licenseCatalog
  * @param {string} [params.hmiLicenseId] - ObjectId of the active HMI's license, if any
+ * @param {string[]} [params.hardwareLicenseIds] - one ObjectId per selected
+ *   hardware unit that has an associated license (from Hardware.license).
+ *   A redundant hardware selection naturally contributes two entries here
+ *   (one per physical unit), so that license's quantity comes out to 2
+ *   automatically — no redundancy-specific logic needed in this function.
  * @returns {Array<{lic: Object, quantity: number}>}
  */
 export function buildRequiredLicenses({
@@ -99,6 +104,7 @@ export function buildRequiredLicenses({
   protocols,
   licenseCatalog,
   hmiLicenseId,
+  hardwareLicenseIds,
 }) {
   const requiredLicenseMap = new Map();
   function addRequired(name, qty = 1) {
@@ -132,17 +138,24 @@ export function buildRequiredLicenses({
     })
     .filter(Boolean);
 
-  if (hmiLicenseId) {
-    const hmiLicense = (licenseCatalog || []).find((lic) => lic._id === hmiLicenseId);
-    if (hmiLicense) {
-      const existing = requiredLicenses.find((item) => item.lic._id === hmiLicense._id);
-      if (existing) {
-        existing.quantity += 1;
-      } else {
-        requiredLicenses.push({ lic: hmiLicense, quantity: 1 });
-      }
+  // Licenses looked up by catalog _id rather than by name (HMI's own
+  // license, each hardware unit's own license) merge into the same list —
+  // shared here so both paths accumulate quantity identically instead of
+  // duplicating rows.
+  function mergeLicenseById(licenseId, qty = 1) {
+    if (!licenseId) return;
+    const lic = (licenseCatalog || []).find((l) => l._id === licenseId);
+    if (!lic) return;
+    const existing = requiredLicenses.find((item) => item.lic._id === lic._id);
+    if (existing) {
+      existing.quantity += qty;
+    } else {
+      requiredLicenses.push({ lic, quantity: qty });
     }
   }
+
+  mergeLicenseById(hmiLicenseId, 1);
+  (hardwareLicenseIds || []).forEach((id) => mergeLicenseById(id, 1));
 
   return requiredLicenses;
 }
