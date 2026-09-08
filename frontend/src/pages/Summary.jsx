@@ -4,6 +4,8 @@ import { useNavigate } from "react-router-dom";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import { authFetch } from "../api.js";
 import LockedOverlay from "../components/LockedOverlay.jsx";
+import ExportReportButtons from "../components/Exportreportbutton.jsx";
+import { projectFromDraft } from "../export/Reportadapters.js";
 import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check, Pencil } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
@@ -171,12 +173,20 @@ const requiredLicenses = buildRequiredLicenses({
         <div className="max-w-4xl mx-auto p-8">
             {/* Header */}
             <div className="mb-10">
-                <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
-                    {isEditing ? "Editing Project" : "Final Step"}
-                </p>
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                    {projectDraft.name || "Project Summary"}
-                </h1>
+                <div className="flex items-start justify-between gap-4">
+                    <div>
+                        <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
+                            {isEditing ? "Editing Project" : "Final Step"}
+                        </p>
+                        <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                            {projectDraft.name || "Project Summary"}
+                        </h1>
+                    </div>
+                    <ExportReportButtons
+                        className="flex-shrink-0 mt-1"
+                        project={projectFromDraft(projectDraft, { hardwareCatalog, activeHmi })}
+                    />
+                </div>
                 {projectDraft.description ? (
                     <p className="text-gray-600">{projectDraft.description}</p>
                 ) : (

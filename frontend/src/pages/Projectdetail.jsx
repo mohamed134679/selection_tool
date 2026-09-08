@@ -18,6 +18,8 @@ import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import StatusBadge from "../components/StatusBadge.jsx";
+import ExportReportButtons from "../components/Exportreportbutton.jsx";
+import { projectFromDetail } from "../export/Reportadapters.js";
 import { authFetch } from "../api.js";
 
 const FILE_BASE = "http://localhost:3000";
@@ -195,6 +197,7 @@ async function handleDelete() {
           <StatusBadge status={project.reviewStatus} />
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
+          <ExportReportButtons project={projectFromDetail(project)} />
           {project.reviewStatus === "needs_edit" && (
             <button
               onClick={handleEditAndResubmit}
