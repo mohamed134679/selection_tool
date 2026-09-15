@@ -1,4 +1,4 @@
-const { buildProjectReportModel } = require("./projectNarrative");
+const { buildProjectReportModel } = require("./Projectnarrative.js");
 const assert = require("assert");
 
 // --- Case 1: fully populated, "happy path" project ---

@@ -1,11 +1,20 @@
 //projects.jsx
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { FolderOpen, Cpu, Monitor, ShieldCheck, Calendar, ArrowRight } from "lucide-react";
 import StatusBadge from "../components/StatusBadge.jsx";
 import { authFetch } from "../api.js";
 
+const STATUS_META = {
+  pending: { title: "Pending Projects", subtitle: "Projects awaiting review from the admin." },
+  needs_edit: { title: "Projects Needing Edit", subtitle: "The admin wrote feedback and need changes." },
+  approved: { title: "Approved Projects", subtitle: "Projects that have been approved." },
+};
+
 export default function Projects() {
+  const [searchParams] = useSearchParams();
+  const statusFilter = searchParams.get("status");
+
   const [projects, setProjects] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -48,13 +57,22 @@ useEffect(() => {
     );
   }
 
+  const visibleProjects = statusFilter
+    ? projects.filter((project) => project.reviewStatus === statusFilter)
+    : projects;
+
+  const heading = statusFilter ? STATUS_META[statusFilter]?.title || "Your Projects" : "Your Projects";
+  const subheading = statusFilter
+    ? STATUS_META[statusFilter]?.subtitle || "Filtered projects."
+    : "Architectures you've created — visible only to you.";
+
   return (
     <div className="max-w-6xl mx-auto p-8">
       <div className="mb-10">
-        <h1 className="text-3xl font-bold text-gray-900 mb-2">Your Projects</h1>
-        <p className="text-gray-600">
-          Architectures you've created — visible only to you.
-        </p>
+        <div className="flex items-center gap-3 flex-wrap mb-2">
+          <h1 className="text-3xl font-bold text-gray-900">{heading}</h1>
+        </div>
+        <p className="text-gray-600">{subheading}</p>
       </div>
 
       {loading && (
@@ -74,19 +92,24 @@ useEffect(() => {
         </p>
       )}
 
-      {!loading && !error && projects.length === 0 && (
+      {!loading && !error && visibleProjects.length === 0 && (
         <div className="text-center py-20 border border-dashed border-gray-300 rounded-2xl">
           <FolderOpen className="w-10 h-10 text-gray-300 mx-auto mb-3" />
-          <p className="text-gray-500 mb-2">You haven't created any projects yet.</p>
-          <Link to="/home" className="text-green-700 hover:underline text-sm font-medium">
-            Start a new project
+          <p className="text-gray-500 mb-2">
+            {statusFilter ? "No projects match this filter." : "You haven't created any projects yet."}
+          </p>
+          <Link
+            to={statusFilter ? "/projects" : "/home"}
+            className="text-green-700 hover:underline text-sm font-medium"
+          >
+            {statusFilter ? "View all projects" : "Start a new project"}
           </Link>
         </div>
       )}
 
-      {!loading && !error && projects.length > 0 && (
+      {!loading && !error && visibleProjects.length > 0 && (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
-          {projects.map((project) => {
+          {visibleProjects.map((project) => {
             const hwCount = (project.SelectedHw || []).length;
             return (
               <Link

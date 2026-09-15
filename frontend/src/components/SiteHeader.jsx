@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { LogOut, Cpu, ShieldCheck } from "lucide-react";
+import { LogOut, ShieldCheck } from "lucide-react";
 
 export default function SiteHeader() {
   const username = localStorage.getItem("appUsername") || "";
@@ -37,15 +37,6 @@ export default function SiteHeader() {
           </Link>
 
           <div className="flex items-center gap-4">
-            {/* Hardware Catalog link */}
-            <Link
-              to="/hardware-catalog"
-              className="hidden sm:inline-flex items-center gap-1.5 text-sm font-medium text-gray-600 hover:text-green-700 transition"
-            >
-              <Cpu className="w-4 h-4" />
-              Hardware Catalog
-            </Link>
-
             {/* Admin Dashboard link — admins only */}
             {isAdmin && (
               <Link
@@ -89,15 +80,6 @@ export default function SiteHeader() {
                       </span>
                     )}
                   </div>
-
-                  {/* Hardware Catalog (mobile) */}
-                  <Link
-                    to="/hardware-catalog"
-                    className="sm:hidden flex items-center gap-3 px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition"
-                  >
-                    <Cpu className="w-4 h-4" />
-                    Hardware Catalog
-                  </Link>
 
                   {/* Admin Dashboard (mobile) — admins only */}
                   {isAdmin && (
