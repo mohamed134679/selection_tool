@@ -1,0 +1,44 @@
+// backend/schemas/Template_schema.js
+const mongoose = require('mongoose');
+
+const templateSchema = new mongoose.Schema(
+  {
+    name: { type: String, required: true },
+    description: { type: String, default: '' },
+    category: { type: String, enum: ['standalone', 'redundant'], required: true },
+    imageUrl: { type: String, default: null },
+
+    SelectedHw: [{
+      hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
+      quantity: { type: Number },
+      selected_io_ids: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Io' }],
+      ioPoints: { type: Number },
+      refNumber: { type: String },
+      attachmentUrl: { type: String },
+      ioRefNumber: { type: String },
+    }],
+
+    Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
+    hmiUsesControlHw: { type: Boolean, default: false },
+    hmiDisabled: { type: Boolean, default: false },
+    hmiRefNumber: { type: String, default: null },
+
+    licences: {
+      buildTime: {
+        wanted: { type: Boolean, default: false },
+        tier: { type: String, enum: ['Standard', 'Professional'] },
+        addons: [{ type: String, enum: ['High Availability', 'Asset Link', 'Procedural Libraries'] }],
+      },
+      runtime: { ioPoints: { type: Number } },
+      orchestration: { nodeCount: { type: Number } },
+      communication: {
+        protocols: [{ type: String, enum: ['Profinet', 'IEC 61850', 'OPC UA as a client'] }],
+      },
+    },
+
+    createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  },
+  { timestamps: true }
+);
+
+module.exports = mongoose.model('Template', templateSchema);

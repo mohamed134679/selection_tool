@@ -6,12 +6,16 @@ import { authFetch } from "../api.js";
 import LockedOverlay from "../components/LockedOverlay.jsx";
 import ExportReportButtons from "../components/Exportreportbutton.jsx";
 import { projectFromDraft } from "../export/Reportadapters.js";
-import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check, Pencil } from "lucide-react";
+import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Paperclip, Check, Pencil, ImagePlus } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
 
 
 const FILE_BASE = "http://localhost:3000";
+const TEMPLATE_CATEGORIES = [
+    { value: "standalone", label: "Standalone Architecture" },
+    { value: "redundant", label: "Redundant Architecture" },
+];
 
 export default function Summary() {
     const { projectDraft, setProjectDraft } = useProjectDraft();
@@ -23,6 +27,7 @@ export default function Summary() {
     const [saving, setSaving] = useState(false);
     const [saved, setSaved] = useState(false);
     const [wasEditing, setWasEditing] = useState(false);
+    const [imagePreview, setImagePreview] = useState(null);
 
     useEffect(() => {
         fetch("http://localhost:3000/hardware")
@@ -47,7 +52,22 @@ export default function Summary() {
         return <LockedOverlay />;
     }
 
+    const isTemplate = projectDraft.mode === "template";
     const isEditing = Boolean(projectDraft.editingProjectId);
+
+    function updateTemplateMeta(updates) {
+        setProjectDraft((prev) => ({
+            ...prev,
+            templateMeta: { ...prev.templateMeta, ...updates },
+        }));
+    }
+
+    function handleTemplateImageChange(e) {
+        const file = e.target.files?.[0];
+        if (!file) return;
+        updateTemplateMeta({ imageFile: file });
+        setImagePreview(URL.createObjectURL(file));
+    }
 
     async function saveProject() {
         setSaveError(null);
@@ -56,7 +76,44 @@ export default function Summary() {
         try {
             const accessToken = localStorage.getItem("accessToken");
             if (!accessToken) {
-                throw new Error("You must be signed in to create a project.");
+                throw new Error("You must be signed in to continue.");
+            }
+
+            if (isTemplate) {
+                if (!projectDraft.templateMeta?.category) {
+                    throw new Error("Please choose a category before saving.");
+                }
+
+                const formData = new FormData();
+                formData.append("name", projectDraft.name);
+                formData.append("description", projectDraft.description || "");
+                formData.append("category", projectDraft.templateMeta.category);
+                formData.append("SelectedHw", JSON.stringify(projectDraft.selectedHw));
+                if (projectDraft.hmiId) formData.append("Hmi_id", projectDraft.hmiId);
+                formData.append("hmiUsesControlHw", String(projectDraft.hmiUsesControlHw));
+                formData.append("hmiDisabled", String(projectDraft.hmiDisabled));
+                if (projectDraft.hmiRefNumber) formData.append("hmiRefNumber", projectDraft.hmiRefNumber);
+                formData.append("licences", JSON.stringify(projectDraft.licences));
+                if (projectDraft.templateMeta.imageFile) {
+                    formData.append("image", projectDraft.templateMeta.imageFile);
+                }
+
+                const res = await authFetch("http://localhost:3000/templates", {
+                    method: "POST",
+                    body: formData,
+                });
+                if (!res.ok) {
+                    const body = await res.json().catch(() => ({}));
+                    if (res.status === 401) {
+                        navigate("/login");
+                        return;
+                    }
+                    throw new Error(body.message || "Failed to create template");
+                }
+                setSaved(true);
+                setProjectDraft((prev) => ({ ...prev, locked: true }));
+                navigate("/templates", { replace: true });
+                return;
             }
 
             const payload = {
@@ -65,6 +122,7 @@ export default function Summary() {
                 SelectedHw: projectDraft.selectedHw,
                 Hmi_id: projectDraft.hmiId,
                 hmiUsesControlHw: projectDraft.hmiUsesControlHw,
+                hmiDisabled: projectDraft.hmiDisabled,
                 hmiRefNumber: projectDraft.hmiRefNumber,
                 licences: projectDraft.licences,
             };
@@ -73,13 +131,13 @@ export default function Summary() {
                 ? `http://localhost:3000/projects/${projectDraft.editingProjectId}`
                 : "http://localhost:3000/projects";
 
-const res = await authFetch(url, {
-    method: isEditing ? "PUT" : "POST",
-    headers: {
-        "Content-Type": "application/json",
-    },
-    body: JSON.stringify(payload),
-});
+            const res = await authFetch(url, {
+                method: isEditing ? "PUT" : "POST",
+                headers: {
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(payload),
+            });
             if (!res.ok) {
                 const body = await res.json().catch(() => ({}));
                 // Access token missing/expired — send the user back to sign in
@@ -114,7 +172,9 @@ const res = await authFetch(url, {
     // When consolidated onto Harmony P6, there's no separate hmiId — but the
     // license still belongs to whichever CPU runs HMI services, so we still
     // look up the Harmony P6 HMI catalog entry purely to pull its license.
-    const activeHmi = projectDraft.hmiUsesControlHw
+    const activeHmi = projectDraft.hmiDisabled
+        ? null
+        : projectDraft.hmiUsesControlHw
         ? hmiOptions.find(isHarmonyP6)
         : hmiOptions.find((hmi) => hmi._id === projectDraft.hmiId);
 
@@ -169,6 +229,10 @@ const requiredLicenses = buildRequiredLicenses({
 
     const hwEntries = Object.entries(hwGroups);
 
+    const canSave = isTemplate
+        ? Boolean(projectDraft.name) && Boolean(projectDraft.templateMeta?.category) && !saving
+        : Boolean(projectDraft.name) && !saving;
+
     return (
         <div className="max-w-4xl mx-auto p-8">
             {/* Header */}
@@ -176,23 +240,25 @@ const requiredLicenses = buildRequiredLicenses({
                 <div className="flex items-start justify-between gap-4">
                     <div>
                         <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
-                            {isEditing ? "Editing Project" : "Final Step"}
+                            {isTemplate ? "New Template" : isEditing ? "Editing Project" : "Final Step"}
                         </p>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                            {projectDraft.name || "Project Summary"}
+                            {projectDraft.name || (isTemplate ? "Template Summary" : "Project Summary")}
                         </h1>
                     </div>
-                    <ExportReportButtons
-                        className="flex-shrink-0 mt-1"
-                        project={projectFromDraft(projectDraft, { hardwareCatalog, activeHmi })}
-                    />
+                    {!isTemplate && (
+                        <ExportReportButtons
+                            className="flex-shrink-0 mt-1"
+                            project={projectFromDraft(projectDraft, { hardwareCatalog, activeHmi })}
+                        />
+                    )}
                 </div>
                 {projectDraft.description ? (
                     <p className="text-gray-600">{projectDraft.description}</p>
                 ) : (
                     <p className="text-gray-400 italic">No description provided</p>
                 )}
-                {isEditing && (
+                {isEditing && !isTemplate && (
                     <div className="mt-4 rounded-xl border border-green-100 bg-green-50 p-4 flex items-start gap-3">
                         <Pencil className="w-4 h-4 text-green-700 mt-0.5 flex-shrink-0" />
                         <p className="text-sm text-gray-700">
@@ -201,6 +267,79 @@ const requiredLicenses = buildRequiredLicenses({
                     </div>
                 )}
             </div>
+
+{/* Template-only: category + image */}
+{isTemplate && (
+    <section className="mb-10">
+        <div className="flex items-center gap-2 mb-4">
+            <ImagePlus className="w-5 h-5 text-green-600" />
+            <h2 className="text-lg font-semibold text-gray-900">Template Details</h2>
+        </div>
+
+        <div className="rounded-xl border border-gray-200 p-4 space-y-4">
+            <div>
+                <label className="text-sm text-gray-600 mb-1 block">
+                    Name <span className="text-red-600">*</span>
+                </label>
+                <input
+                    type="text"
+                    value={projectDraft.name}
+                    onChange={(e) => setProjectDraft((prev) => ({ ...prev, name: e.target.value }))}
+                    placeholder="Template name"
+                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+            </div>
+
+            <div>
+                <label className="text-sm text-gray-600 mb-1 block">Description</label>
+                <textarea
+                    value={projectDraft.description}
+                    onChange={(e) => setProjectDraft((prev) => ({ ...prev, description: e.target.value }))}
+                    placeholder="Optional description"
+                    rows={3}
+                    className="border border-gray-300 rounded-lg px-3 py-2 w-full"
+                />
+            </div>
+
+            <div>
+                <p className="text-sm text-gray-600 mb-2">
+                    Category <span className="text-red-600">*</span>
+                </p>
+                <div className="flex gap-3">
+                    {TEMPLATE_CATEGORIES.map((cat) => (
+                        <button
+                            key={cat.value}
+                            type="button"
+                            onClick={() => updateTemplateMeta({ category: cat.value })}
+                            className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${
+                                projectDraft.templateMeta?.category === cat.value
+                                    ? "border-green-600 bg-green-50 text-green-700"
+                                    : "border-gray-300 text-gray-600 hover:border-gray-400"
+                            }`}
+                        >
+                            {cat.label}
+                        </button>
+                    ))}
+                </div>
+            </div>
+
+            <div>
+                <p className="text-sm text-gray-600 mb-2">Image</p>
+                <label className="flex items-center justify-center w-full h-40 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-600 cursor-pointer overflow-hidden transition">
+                    {imagePreview ? (
+                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
+                    ) : (
+                        <div className="flex flex-col items-center text-gray-400">
+                            <ImagePlus className="w-8 h-8 mb-2" />
+                            <span className="text-sm">Click to upload</span>
+                        </div>
+                    )}
+                    <input type="file" accept="image/*" onChange={handleTemplateImageChange} className="hidden" />
+                </label>
+            </div>
+        </div>
+    </section>
+)}
 
             {/* Hardware */}
             <section className="mb-10">
@@ -273,6 +412,8 @@ const requiredLicenses = buildRequiredLicenses({
                             )}
                         </div>
                     </div>
+                ) : projectDraft.hmiDisabled ? (
+                    <p className="text-sm text-gray-500">No HMI</p>
                 ) : activeHmi ? (
                     <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
                         {activeHmi.image && (
@@ -384,19 +525,23 @@ const requiredLicenses = buildRequiredLicenses({
                 {saved ? (
                     <p className="flex items-center gap-2 text-green-700 font-medium">
                         <CheckCircle2 className="w-5 h-5" />
-                        {wasEditing ? "Changes saved and resubmitted for review!" : "Project created!"}
+                        {isTemplate
+                            ? "Template created!"
+                            : wasEditing
+                            ? "Changes saved and resubmitted for review!"
+                            : "Project created!"}
                     </p>
                 ) : (
                     <button
-                        disabled={!projectDraft.name || saving}
+                        disabled={!canSave}
                         onClick={saveProject}
                         className={`rounded-lg bg-green-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-green-700 transition ${
-                            !projectDraft.name || saving ? "opacity-40 cursor-not-allowed" : ""
+                            !canSave ? "opacity-40 cursor-not-allowed" : ""
                         }`}
                     >
                         {saving
-                            ? (isEditing ? "Saving..." : "Creating...")
-                            : (isEditing ? "Save & Resubmit" : "Create Project")}
+                            ? (isTemplate ? "Creating..." : isEditing ? "Saving..." : "Creating...")
+                            : (isTemplate ? "Create Template" : isEditing ? "Save & Resubmit" : "Create Project")}
                     </button>
                 )}
             </div>

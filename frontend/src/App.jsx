@@ -21,6 +21,8 @@ import SiteHeader from "./components/SiteHeader.jsx";
 import LiveStackHeader from "./components/LiveStackHeader.jsx";
 import RequireAdmin from "./components/RequireAdmin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
+import TemplatesPage from "./components/TemplatesPage.jsx";
+import AdminCreateTemplatePage from './pages/admin/AdminCreateTemplatePage.jsx';
 
 const WIZARD_PATHS = ["/hardware", "/hmi", "/licence", "/summary", "/projects/new"];
 
@@ -48,6 +50,7 @@ function AppRoutes() {
       <Route path="/hmi" element={<Hmi />} />
       <Route path="/licence" element={<Licence />} />
       <Route path="/summary" element={<Summary />} />
+      <Route path="/templates" element={<TemplatesPage />} />
       <Route
         path="/admin"
         element={
@@ -56,6 +59,7 @@ function AppRoutes() {
           </RequireAdmin>
         }
       />
+      <Route path="/admin/templates/new" element={<AdminCreateTemplatePage />} />
     </Routes>
   );
 }

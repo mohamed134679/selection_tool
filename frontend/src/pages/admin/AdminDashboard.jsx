@@ -1,10 +1,11 @@
 import { useState } from "react";
-import { ClipboardList, Users, Cpu, Monitor, ShieldCheck } from "lucide-react";
+import { ClipboardList, Users, Cpu, Monitor, ShieldCheck, LayoutTemplate } from "lucide-react";
 import AdminProjectsReview from "./AdminProjectsReview.jsx";
 import AdminUsers from "./AdminUsers.jsx";
 import AdminHardwareManager from "./AdminHardwareManager.jsx";
 import AdminHmiManager from "./AdminHmiManager.jsx";
 import AdminLicenseManager from "./AdminLicenseManager.jsx";
+import AdminCreateTemplatePage from "./AdminCreateTemplatePage.jsx";
 
 const TABS = [
   { key: "projects", label: "Project Review", icon: ClipboardList },
@@ -12,6 +13,7 @@ const TABS = [
   { key: "hardware", label: "Hardware", icon: Cpu },
   { key: "hmi", label: "HMI", icon: Monitor },
   { key: "licenses", label: "Licenses", icon: ShieldCheck },
+  { key: "templates", label: "Templates", icon: LayoutTemplate },
 ];
 
 export default function AdminDashboard() {
@@ -50,6 +52,7 @@ export default function AdminDashboard() {
       {activeTab === "hardware" && <AdminHardwareManager />}
       {activeTab === "hmi" && <AdminHmiManager />}
       {activeTab === "licenses" && <AdminLicenseManager />}
+      {activeTab === "templates" && <AdminCreateTemplatePage />}
     </div>
   );
 }
