@@ -4,6 +4,7 @@ import { Plus, Boxes, LayoutGrid, Clock, ShieldCheck, CheckCircle } from 'lucide
 import { authFetch } from '../api.js'
 import { useProjectDraft } from '../context/ProjectDraftContext.jsx'
 
+
 const initialStats = [
   { icon: LayoutGrid, label: 'Total Projects', value: 0, filter: null },
   { icon: Clock, label: 'Pending Projects', value: 0, filter: 'pending' },
@@ -22,10 +23,11 @@ export default function HomePage() {
   const { projectDraft, setProjectDraft } = useProjectDraft()
   const [showBanner, setShowBanner] = useState(false)
   const [fading, setFading] = useState(false)
-  const [showCreatePopup, setShowCreatePopup] = useState(false)
   const [name, setName] = useState('')
   const [description, setDescription] = useState('')
   const [stats, setStats] = useState(initialStats)
+  const [showCreatePopup, setShowCreatePopup] = useState(false)
+const [showChoicePopup, setShowChoicePopup] = useState(false)
 
   function startProject() {
     setProjectDraft({
@@ -37,6 +39,7 @@ export default function HomePage() {
       selectedHw: [],
       hmiId: null,
       hmiUsesControlHw: false,
+      hmiDisabled: false,
       hmiRefNumber: null,
       licences: {
         buildTime: { wanted: null, tier: null, addons: [] },
@@ -160,18 +163,18 @@ export default function HomePage() {
 
         {/* Primary Actions */}
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mb-16">
-          <div
-            onClick={() => setShowCreatePopup(true)}
-            className="h-full p-8 rounded-2xl border border-gray-200 hover:border-green-600 hover:shadow-md transition group cursor-pointer"
-          >
-            <div className="w-12 h-12 rounded-lg bg-green-600 flex items-center justify-center mb-6 group-hover:bg-green-700 transition">
-              <Plus className="w-6 h-6 text-white" />
-            </div>
-            <h2 className="text-xl font-semibold text-gray-900 mb-2">Create Project</h2>
-            <p className="text-gray-600 text-sm">
-              Start a new architecture — select Control, I/O, HMI, and licensing step by step.
-            </p>
-          </div>
+<div
+  onClick={() => setShowChoicePopup(true)}
+  className="h-full p-8 rounded-2xl border border-gray-200 hover:border-green-600 hover:shadow-md transition group cursor-pointer"
+>
+  <div className="w-12 h-12 rounded-lg bg-green-600 flex items-center justify-center mb-6 group-hover:bg-green-700 transition">
+    <Plus className="w-6 h-6 text-white" />
+  </div>
+  <h2 className="text-xl font-semibold text-gray-900 mb-2">Create Project</h2>
+  <p className="text-gray-600 text-sm">
+    Start a new architecture: select Control, I/O, HMI, and licensing step by step.
+  </p>
+</div>
 
           <Link to="/hardware-catalog">
             <div className="h-full p-8 rounded-2xl border border-gray-200 hover:border-green-600 hover:shadow-md transition group cursor-pointer">
@@ -180,7 +183,7 @@ export default function HomePage() {
               </div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Hardware Catalog</h2>
               <p className="text-gray-600 text-sm">
-                Browse available Control, I/O, and HMI hardware and their specs.
+                Get to know all available Control and HMI hardware with their specs.
               </p>
             </div>
           </Link>
@@ -271,51 +274,101 @@ export default function HomePage() {
         </div>
       </main>
 
-      {showCreatePopup && (
-        <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
-          <div className="bg-white rounded-2xl p-6 w-full max-w-md">
-            <h3 className="text-lg font-semibold text-gray-900 mb-4">New Project</h3>
+{showChoicePopup && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+      <h3 className="text-lg font-semibold text-gray-900 mb-2">New Project</h3>
+      <p className="text-sm text-gray-600 mb-6">
+        How would you like to start?
+      </p>
 
-            <label className="text-sm text-gray-600 mb-1 block">
-              Name <span className="text-red-600">*</span>
-            </label>
-            <input
-              type="text"
-              value={name}
-              onChange={(e) => setName(e.target.value)}
-              placeholder="Project name"
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-4"
-            />
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+<button
+  onClick={() => {
+    setShowChoicePopup(false)
+    setShowCreatePopup(true)
+  }}
+  className="p-5 rounded-xl border border-gray-200 hover:border-green-600 hover:shadow-md transition text-left"
+>
+  <div className="w-10 h-10 rounded-lg bg-green-600 flex items-center justify-center mb-3">
+    <Plus className="w-5 h-5 text-white" />
+  </div>
+  <p className="font-medium text-gray-900 mb-1">New Project</p>
+  <p className="text-xs text-gray-600">Build step by step from scratch.</p>
+</button>
 
-            <label className="text-sm text-gray-600 mb-1 block">Description</label>
-            <textarea
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              placeholder="Optional description"
-              className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-4"
-              rows={3}
-            />
-
-            <div className="flex justify-end gap-3">
-              <button
-                onClick={() => setShowCreatePopup(false)}
-                className="text-sm text-gray-600 hover:underline"
-              >
-                Cancel
-              </button>
-              <button
-                disabled={!name}
-                onClick={startProject}
-                className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
-                  !name ? "opacity-40 cursor-not-allowed" : ""
-                }`}
-              >
-                Continue
-              </button>
-            </div>
+        <button
+          onClick={() => {
+            setShowChoicePopup(false)
+            navigate('/templates')
+          }}
+          className="p-5 rounded-xl border border-gray-200 hover:border-green-600 hover:shadow-md transition text-left"
+        >
+          <div className="w-10 h-10 rounded-lg bg-blue-600 flex items-center justify-center mb-3">
+            <LayoutGrid className="w-5 h-5 text-white" />
           </div>
-        </div>
-      )}
+          <p className="font-medium text-gray-900 mb-1">From Template</p>
+          <p className="text-xs text-gray-600">Use a predefined setup.</p>
+        </button>
+      </div>
+
+      <div className="flex justify-end">
+        <button
+          onClick={() => setShowChoicePopup(false)}
+          className="text-sm text-gray-600 hover:underline"
+        >
+          Cancel
+        </button>
+      </div>
+    </div>
+  </div>
+)}
+
+{showCreatePopup && (
+  <div className="fixed inset-0 bg-black/40 flex items-center justify-center z-50">
+    <div className="bg-white rounded-2xl p-6 w-full max-w-md">
+      <h3 className="text-lg font-semibold text-gray-900 mb-4">New Project</h3>
+
+      <label className="text-sm text-gray-600 mb-1 block">
+        Name <span className="text-red-600">*</span>
+      </label>
+      <input
+        type="text"
+        value={name}
+        onChange={(e) => setName(e.target.value)}
+        placeholder="Project name"
+        className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-4"
+      />
+
+      <label className="text-sm text-gray-600 mb-1 block">Description</label>
+      <textarea
+        value={description}
+        onChange={(e) => setDescription(e.target.value)}
+        placeholder="Optional description"
+        className="border border-gray-300 rounded-lg px-3 py-2 w-full mb-4"
+        rows={3}
+      />
+
+      <div className="flex justify-end gap-3">
+        <button
+          onClick={() => setShowCreatePopup(false)}
+          className="text-sm text-gray-600 hover:underline"
+        >
+          Cancel
+        </button>
+        <button
+          disabled={!name}
+          onClick={startProject}
+          className={`rounded-lg bg-green-600 text-white px-4 py-2 text-sm font-medium hover:bg-green-700 ${
+            !name ? "opacity-40 cursor-not-allowed" : ""
+          }`}
+        >
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+)}
     </div>
   )
 }

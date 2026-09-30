@@ -1,3 +1,4 @@
+// frontend/src/pages/HardwarePopup.jsx
 import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Upload, FileText, Image as ImageIcon, X, Loader2, Check, Zap } from "lucide-react";
@@ -179,7 +180,7 @@ return (
         opacity: dragY > 0 ? Math.max(0.4, 1 - dragY / 300) : 1,
         transition: dragging ? "none" : "transform 0.2s ease-out, opacity 0.2s ease-out",
       }}
-      className="bg-white rounded-2xl p-6 w-full max-w-md"
+      className="bg-white rounded-2xl p-6 w-full max-w-md max-h-[calc(100vh-2rem)] overflow-y-auto"
     >
       <div
         onMouseDown={handleDragStart}

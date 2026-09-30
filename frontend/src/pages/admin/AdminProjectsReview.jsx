@@ -205,6 +205,8 @@ function ProjectReviewModal({ projectId, onClose, onReviewed }) {
                 </div>
                 {project.hmiUsesControlHw ? (
                   <p className="text-sm text-gray-700">Same as Control/IO hardware (Harmony P6)</p>
+                ) : project.hmiDisabled ? (
+                  <p className="text-sm text-gray-500">No HMI</p>
                 ) : project.Hmi_id ? (
                   <p className="text-sm text-gray-700">
                     {project.Hmi_id.Name}

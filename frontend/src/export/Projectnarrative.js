@@ -19,7 +19,7 @@
  * transformation and can be unit tested without a DOM/canvas/pdfmake.
  */
 
-// ---- helpers -------------------------------------------------------------
+import { groupSelectedHw } from "../lib/hardwareGrouping.js";
 
 function resolveName(ref, fallbackLabel = "Unnamed item") {
   if (!ref) return null;
@@ -104,56 +104,62 @@ function buildOverviewSection(project) {
  * @returns {{ heading: string, paragraphs: string[], table?: object }}
  */
 function buildHardwareSection(project) {
-  const selected = project.SelectedHw || [];
+  const groups = groupSelectedHw(project.SelectedHw || []);
   const paragraphs = [];
 
-  if (selected.length === 0) {
+  if (groups.length === 0) {
     paragraphs.push(
       "No control hardware has been selected for this project yet."
     );
     return { heading: "Control Architecture & Hardware", paragraphs };
   }
 
-  const countSentence = project.number_of_hw
-    ? `The architecture is built around ${project.number_of_hw} controller${
-        project.number_of_hw === 1 ? "" : "s"
-      }, detailed below.`
-    : `The architecture uses the following hardware selections.`;
-  paragraphs.push(countSentence);
+  paragraphs.push(
+    `The architecture is built around ${groups.length} hardware selection${
+      groups.length === 1 ? "" : "s"
+    }, detailed below.`
+  );
 
-  const rows = selected.map((item, idx) => {
-    const hwName = resolveName(item.hw_id, `Hardware item ${idx + 1}`);
-    const ioNames = (item.selected_io_ids || []).map(resolveNameIfPopulated).filter(Boolean);
+  const rows = groups.map((g, idx) => {
+    const hwName = resolveName(g.hw, `Hardware item ${idx + 1}`);
+    const ioNames = [...new Set(g.ioIds.map(resolveNameIfPopulated).filter(Boolean))];
     return {
       hwName,
-      quantity: item.quantity ?? "—",
-      ioPoints: item.ioPoints ?? "—",
-      refNumber: item.refNumber || "—",
-      ioRefNumber: item.ioRefNumber || "—",
+      quantity: g.quantity,
+      ioPoints: g.ioPoints || "—",
+      refNumber: g.refNumber || "—",
+      ioRefNumber: g.ioRefNumber || "—",
       ioNames,
+      attachmentCount: g.attachments.length,
     };
   });
 
-  // Narrative summary sentence per hardware item.
+  // Narrative summary sentence per hardware group.
   rows.forEach((row) => {
-    let sentence = `${row.hwName}`;
-    if (row.quantity !== "—") sentence += ` (quantity: ${row.quantity})`;
-    if (row.ioPoints !== "—") sentence += ` is sized for ${row.ioPoints} I/O points`;
+    let sentence = `${row.hwName} (quantity: ${row.quantity})`;
+    if (row.ioPoints !== "—") sentence += ` is sized for ${row.ioPoints} I/O points in total`;
     if (row.ioNames.length) {
       sentence += ` and communicates with ${joinList(row.ioNames)}`;
     }
-    if (row.refNumber !== "—") sentence += `. Reference number: ${row.refNumber}`;
+    const refs = [];
+    if (row.refNumber !== "—") refs.push(`hardware reference ${row.refNumber}`);
+    if (row.ioRefNumber !== "—") refs.push(`I/O reference ${row.ioRefNumber}`);
+    if (refs.length) sentence += `. Recorded under ${joinList(refs)}`;
+    if (row.attachmentCount > 0) {
+      sentence += `, with ${row.attachmentCount} attachment${row.attachmentCount === 1 ? "" : "s"} on file`;
+    }
     sentence += ".";
     paragraphs.push(sentence);
   });
 
   const table = {
-    headers: ["Hardware", "Qty", "I/O Points", "Ref. Number", "Connected I/O"],
+    headers: ["Hardware", "Qty", "I/O Points", "Ref. Number", "IO Ref. Number", "Connected I/O"],
     rows: rows.map((r) => [
       r.hwName,
       String(r.quantity),
       String(r.ioPoints),
       r.refNumber,
+      r.ioRefNumber,
       r.ioNames.length ? r.ioNames.join(", ") : "—",
     ]),
   };
@@ -167,6 +173,11 @@ function buildHardwareSection(project) {
 function buildHmiSection(project) {
   const paragraphs = [];
   const hmiName = resolveName(project.Hmi_id) || project.HMI;
+
+  if (project.hmiDisabled) {
+    paragraphs.push("This project does not use an HMI.");
+    return { heading: "HMI Configuration", paragraphs };
+  }
 
   if (!hmiName && !project.hmiUsesControlHw) {
     paragraphs.push("No HMI configuration has been defined for this project yet.");

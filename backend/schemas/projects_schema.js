@@ -17,6 +17,7 @@ createdByUsername: { type: String, default: null }, // snapshot, filled in when 
   }],
   Hmi_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hmi' },
   hmiUsesControlHw: { type: Boolean, default: false },
+  hmiDisabled: { type: Boolean, default: false },
   hmiRefNumber: { type: String },
   licences: {
     buildTime: {

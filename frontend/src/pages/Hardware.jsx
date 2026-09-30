@@ -1,3 +1,4 @@
+// frontend/src/pages/Hardware.jsx
 import { useEffect, useState } from "react";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
 import { Button } from "@/components/ui/button";

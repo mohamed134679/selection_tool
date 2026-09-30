@@ -12,6 +12,7 @@ export default function Hmi() {
       ...prev,
       hmiId: id,
       hmiUsesControlHw: false,
+      hmiDisabled: false,
       hmiRefNumber: null,
     }));
   }
@@ -24,7 +25,18 @@ export default function Hmi() {
     setProjectDraft((prev) => ({
       ...prev,
       hmiUsesControlHw: value,
+      hmiDisabled: false,
       hmiId: value ? null : prev.hmiId,
+      hmiRefNumber: null,
+    }));
+  }
+
+  function setNoHmi(value) {
+    setProjectDraft((prev) => ({
+      ...prev,
+      hmiId: null,
+      hmiUsesControlHw: false,
+      hmiDisabled: value,
       hmiRefNumber: null,
     }));
   }
@@ -39,9 +51,11 @@ export default function Hmi() {
         selectedId={projectDraft.hmiId}
         hmiRefNumber={projectDraft.hmiRefNumber}
         useControlHwAsHmi={projectDraft.hmiUsesControlHw}
+        noHmi={projectDraft.hmiDisabled}
         onSelect={setSelectedId}
         onSelectHmiRef={setHmiRefNumber}
         onUseControlHwAsHmi={setUseControlHwAsHmi}
+        onSetNoHmi={setNoHmi}
         onNext={() => navigate("/licence")}
       />
     </div>

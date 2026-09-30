@@ -1,18 +1,23 @@
 /**
  * projectReportExcel.js
  *
- * Generates the same project detail report as an .xlsx workbook,
- * client-side, using exceljs.
- *
+ * Renders the project report as .xlsx, client-side, using exceljs.
  * npm install exceljs
  *
- * Unlike the PDF (which reads prose out of projectNarrative.js), Excel is
- * a tabular medium — this pulls the *structured* fields directly off the
- * project so values land in their own cells (sortable/filterable), rather
- * than parsing them back out of narrative sentences.
+ * Layout:
+ *   - Title block
+ *   - Overview — its own small label/value block (unchanged from before)
+ *   - ONE continuous table covering Hardware + HMI + Licensing, with bold
+ *     green section-divider rows *inside* the same bordered region (no
+ *     gaps/separate tables between them anymore).
+ *
+ * Styling is applied cell-by-cell (not exceljs's built-in table themes) so
+ * the colors match the brand green used everywhere else in the report,
+ * rather than Excel's default table color scheme.
  */
 
 import ExcelJS from "exceljs";
+import { buildOverviewRows, buildDetailRows, DETAIL_HEADER } from "./reportTableRows.js";
 
 const BRAND = {
   darkGreen: "FF1C8A3B",
@@ -20,30 +25,39 @@ const BRAND = {
   headerText: "FFFFFFFF",
   gray: "FF3C4043",
   lightRow: "FFF4F7F5",
+  border: "FFD8DEDA",
 };
 
-function resolveName(ref, fallback = "—") {
-  if (!ref) return fallback;
-  if (typeof ref === "string") return ref;
-  return ref.Name || ref.name || ref.username || fallback;
+const thinBorder = { style: "thin", color: { argb: BRAND.border } };
+const allBorders = { top: thinBorder, left: thinBorder, bottom: thinBorder, right: thinBorder };
+
+function styleSectionTitle(cell) {
+  cell.font = { bold: true, size: 13, color: { argb: BRAND.darkGreen } };
 }
 
-function resolveNameIfPopulated(ref) {
-  if (ref && typeof ref === "object") return ref.Name || ref.name || ref.username || null;
-  return null;
-}
-
-function styleSectionTitle(row) {
-  row.font = { bold: true, size: 13, color: { argb: BRAND.darkGreen } };
-  row.height = 22;
-}
-
-function styleTableHeader(row) {
+function styleColumnHeaderRow(row) {
   row.eachCell((cell) => {
     cell.font = { bold: true, color: { argb: BRAND.headerText } };
     cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BRAND.green } };
     cell.alignment = { vertical: "middle" };
+    cell.border = allBorders;
   });
+}
+
+function styleBodyRow(row, zebra) {
+  row.eachCell((cell) => {
+    cell.border = allBorders;
+    if (zebra) {
+      cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BRAND.lightRow } };
+    }
+  });
+}
+
+function styleSectionDividerRow(row, colCount) {
+  row.getCell(1).font = { bold: true, color: { argb: BRAND.darkGreen }, size: 11 };
+  for (let c = 1; c <= colCount; c++) {
+    row.getCell(c).border = { ...allBorders, top: { style: "thin", color: { argb: BRAND.darkGreen } } };
+  }
 }
 
 /**
@@ -58,133 +72,69 @@ export function buildProjectReportWorkbook(project) {
   const sheet = wb.addWorksheet("Project Report", {
     pageSetup: { orientation: "landscape", fitToPage: true },
   });
-  sheet.columns = [
-    { key: "a", width: 26 },
-    { key: "b", width: 26 },
-    { key: "c", width: 20 },
-    { key: "d", width: 18 },
-    { key: "e", width: 24 },
-  ];
+
+  const colCount = DETAIL_HEADER.length; // 7
+sheet.columns = [
+  { width: 26 }, // Item
+  { width: 26 }, // Value
+  { width: 22 }, // Ref. Number
+  { width: 12 }, // Quantity
+];
 
   // ---- Title block ----
-  sheet.mergeCells("A1:E1");
-  const titleCell = sheet.getCell("A1");
-  titleCell.value = `${project.name || "Untitled Project"} — Project Report`;
-  titleCell.font = { bold: true, size: 16, color: { argb: BRAND.darkGreen } };
+  sheet.mergeCells(1, 1, 1, colCount);
+  sheet.getCell("A1").value = `${project.name || "Untitled Project"} — Project Report`;
+  sheet.getCell("A1").font = { bold: true, size: 18, color: { argb: BRAND.darkGreen } };
   sheet.getRow(1).height = 26;
 
-  sheet.mergeCells("A2:E2");
+  sheet.mergeCells(2, 1, 2, colCount);
   sheet.getCell("A2").value = `Generated ${new Date().toLocaleDateString()}  |  EcoStruxure Automation Expert`;
   sheet.getCell("A2").font = { italic: true, size: 9, color: { argb: BRAND.gray } };
 
   let r = 4;
 
-  // ---- Overview ----
+  // ---- Overview (its own small block, unchanged) ----
   sheet.getCell(`A${r}`).value = "Overview";
-  styleSectionTitle(sheet.getRow(r));
+  styleSectionTitle(sheet.getCell(`A${r}`));
   r += 1;
 
-  const overviewRows = project.isDraft
-    ? [
-        ["Project name", project.name || "—"],
-        ["Description", project.description || "—"],
-        ["Status", "Preview — not yet saved"],
-      ]
-    : [
-        ["Project name", project.name || "—"],
-        ["Description", project.description || "—"],
-        ["Created by", resolveName(project.createdBy) || project.createdByUsername || "—"],
-        ["Created at", project.createdAt ? new Date(project.createdAt).toLocaleDateString() : "—"],
-        ["Review status", project.reviewStatus || "—"],
-        ["Review comment", project.reviewComment || "—"],
-      ];
-  overviewRows.forEach(([label, value]) => {
-    sheet.getCell(`A${r}`).value = label;
-    sheet.getCell(`A${r}`).font = { bold: true, color: { argb: BRAND.gray } };
-    sheet.mergeCells(`B${r}:E${r}`);
-    sheet.getCell(`B${r}`).value = value;
+  buildOverviewRows(project).forEach(([label, value]) => {
+    const row = sheet.getRow(r);
+    row.getCell(1).value = label;
+    row.getCell(1).font = { bold: true, color: { argb: BRAND.gray } };
+    row.getCell(1).border = allBorders;
+    row.getCell(2).value = value;
+    row.getCell(2).border = allBorders;
+    // Only 2 real columns of content here — deliberately NOT merging/
+    // bordering columns 3..colCount. A merged "wide" row just to match the
+    // detail table's width below leaves those extra cells bordered but
+    // empty, which is the "empty cells" problem. Two honest columns, no
+    // dead space.
     r += 1;
   });
+
+  r += 1; // gap before the detail table (Overview stays visually separate)
+
+  // ---- ONE continuous table: Hardware + HMI + Licensing ----
+  const headerRowIndex = r;
+  const headerRow = sheet.getRow(headerRowIndex);
+  DETAIL_HEADER.forEach((h, i) => (headerRow.getCell(i + 1).value = h));
+  styleColumnHeaderRow(headerRow);
   r += 1;
 
-  // ---- Hardware ----
-  sheet.getCell(`A${r}`).value = "Control Architecture & Hardware";
-  styleSectionTitle(sheet.getRow(r));
-  r += 1;
-
-  const hwHeaderRow = r;
-  ["Hardware", "Quantity", "I/O Points", "Ref. Number", "Connected I/O"].forEach((h, i) => {
-    sheet.getRow(hwHeaderRow).getCell(i + 1).value = h;
-  });
-  styleTableHeader(sheet.getRow(hwHeaderRow));
-  r += 1;
-
-  const selectedHw = project.SelectedHw || [];
-  if (selectedHw.length === 0) {
-    sheet.getCell(`A${r}`).value = "No hardware selected yet.";
-    sheet.getCell(`A${r}`).font = { italic: true, color: { argb: BRAND.gray } };
-    r += 1;
-  } else {
-    selectedHw.forEach((item, idx) => {
-      const ioNames = (item.selected_io_ids || []).map(resolveNameIfPopulated).filter(Boolean).join(", ") || "—";
-      const rowValues = [
-        resolveName(item.hw_id, `Hardware ${idx + 1}`),
-        item.quantity ?? "—",
-        item.ioPoints ?? "—",
-        item.refNumber || "—",
-        ioNames,
-      ];
-      const row = sheet.getRow(r);
-      rowValues.forEach((v, i) => (row.getCell(i + 1).value = v));
-      if (idx % 2 === 1) {
-        row.eachCell((cell) => {
-          cell.fill = { type: "pattern", pattern: "solid", fgColor: { argb: BRAND.lightRow } };
-        });
-      }
-      r += 1;
-    });
-  }
-  r += 1;
-
-  // ---- HMI ----
-  sheet.getCell(`A${r}`).value = "HMI Configuration";
-  styleSectionTitle(sheet.getRow(r));
-  r += 1;
-
-  const hmiRows = [
-    ["HMI hardware", resolveName(project.Hmi_id) || project.HMI || "—"],
-    ["Uses control hardware", project.hmiUsesControlHw ? "Yes" : "No"],
-    ["HMI reference number", project.hmiRefNumber || "—"],
-  ];
-  hmiRows.forEach(([label, value]) => {
-    sheet.getCell(`A${r}`).value = label;
-    sheet.getCell(`A${r}`).font = { bold: true, color: { argb: BRAND.gray } };
-    sheet.mergeCells(`B${r}:E${r}`);
-    sheet.getCell(`B${r}`).value = value;
-    r += 1;
-  });
-  r += 1;
-
-  // ---- Licensing ----
-  sheet.getCell(`A${r}`).value = "Licensing";
-  styleSectionTitle(sheet.getRow(r));
-  r += 1;
-
-  const lic = project.licences || {};
-  const bt = lic.buildTime || {};
-  const licRows = [
-    ["Buildtime license requested", bt.wanted ? "Yes" : "No"],
-    ["Buildtime tier", bt.tier || "—"],
-    ["Buildtime add-ons", (bt.addons || []).join(", ") || "—"],
-    ["Runtime I/O points", (lic.runtime && lic.runtime.ioPoints) ?? "—"],
-    ["Orchestration node count", (lic.orchestration && lic.orchestration.nodeCount) ?? "—"],
-    ["Communication protocols", ((lic.communication && lic.communication.protocols) || []).join(", ") || "—"],
-  ];
-  licRows.forEach(([label, value]) => {
-    sheet.getCell(`A${r}`).value = label;
-    sheet.getCell(`A${r}`).font = { bold: true, color: { argb: BRAND.gray } };
-    sheet.mergeCells(`B${r}:E${r}`);
-    sheet.getCell(`B${r}`).value = value;
+  let zebra = false;
+  buildDetailRows(project).forEach((entry) => {
+    const row = sheet.getRow(r);
+    if (entry.type === "section") {
+      row.getCell(1).value = entry.label;
+      sheet.mergeCells(r, 1, r, colCount);
+      styleSectionDividerRow(row, colCount);
+      zebra = false; // restart zebra striping at the top of each section
+    } else {
+      entry.cells.forEach((v, i) => (row.getCell(i + 1).value = v));
+      styleBodyRow(row, zebra);
+      zebra = !zebra;
+    }
     r += 1;
   });
 

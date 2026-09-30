@@ -20,10 +20,9 @@
 
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
-import * as projectNarrative from "../export/Projectnarrative.js";
-import { SCHNEIDER_LOGO_BASE64 } from "../export/Logoasset.js";
-
-const { buildProjectReportModel } = projectNarrative;
+import { buildProjectReportModel } from "./projectNarrative.js";
+import { SCHNEIDER_LOGO_BASE64 } from "./logoAsset.js";
+import { tableToPdfMake } from "../export/Pdftablehelpers.js";
 
 pdfMake.vfs = pdfFonts.pdfMake ? pdfFonts.pdfMake.vfs : pdfFonts.vfs;
 
@@ -128,27 +127,6 @@ function introSection() {
       margin: [0, 6, 0, 14],
     },
   ];
-}
-
-function tableToPdfMake(table) {
-  return {
-    style: "table",
-    table: {
-      headerRows: 1,
-      widths: ["*", "auto", "auto", "auto", "*"],
-      body: [
-        table.headers.map((h) => ({ text: h, style: "tableHeader" })),
-        ...table.rows.map((row) => row.map((cell) => ({ text: cell, style: "tableCell" }))),
-      ],
-    },
-    layout: {
-      fillColor: (rowIndex) => (rowIndex === 0 ? COLORS.green : rowIndex % 2 === 0 ? COLORS.bg : null),
-      hLineWidth: () => 0.5,
-      vLineWidth: () => 0,
-      hLineColor: () => COLORS.hairline,
-    },
-    margin: [0, 4, 0, 14],
-  };
 }
 
 function projectSections(model) {

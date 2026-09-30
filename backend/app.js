@@ -90,6 +90,7 @@ const path = require('path');
 const uploadsRouter = require('./routes/uploads');
 const adminUsersRoutes = require('./routes/adminUsers');
 const adminProjectsRoutes = require('./routes/adminProjects');
+const templatesRoutes = require('./routes/templates');
 
 app.use('/auth', authRoutes);
 app.use('/io', ioRoutes);
@@ -101,6 +102,7 @@ app.use('/uploads', express.static(path.join(__dirname, 'uploads'))); // serves 
 app.use('/upload', uploadsRouter); // POST endpoint that saves them
 app.use('/admin/users', adminUsersRoutes);
 app.use('/admin/projects', adminProjectsRoutes);
+app.use('/templates', templatesRoutes);
 
 // Catch anything thrown in async route handlers that wasn't already
 // caught locally, so the process doesn't crash on an unhandled rejection

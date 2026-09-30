@@ -1,7 +1,8 @@
+// frontend/src/components/HmiStep.jsx
 import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useProjectDraft } from "../context/ProjectDraftContext.jsx";
-import { Cpu, Check } from "lucide-react";
+import { Cpu, Check, ArrowRight } from "lucide-react";
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import ReferenceNumberPicker from "../components/ReferenceNumberPicker.jsx";
 
@@ -36,9 +37,11 @@ export default function HmiStep({
   selectedId,
   hmiRefNumber,
   useControlHwAsHmi,
+  noHmi,
   onSelect,
   onSelectHmiRef,
   onUseControlHwAsHmi,
+  onSetNoHmi,
   onNext,
 }) {
   const { projectDraft } = useProjectDraft();
@@ -82,6 +85,10 @@ export default function HmiStep({
     onUseControlHwAsHmi(false);
   }
 
+  function chooseNoHmi() {
+    onSetNoHmi(true);
+  }
+
   const selectedHmiModel = hmiOptions.find((h) => h._id === selectedId) || null;
 
   const isHarmonyP6Hmi = isHarmonyP6(selectedHmiModel);
@@ -99,6 +106,33 @@ export default function HmiStep({
     hmiRefValid = !hasHmiRefChoices || Boolean(hmiRefNumber);
   }
   const canAdvance = Boolean(selectedId) && hmiRefValid;
+
+  if (noHmi) {
+    return (
+      <div>
+        <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose HMI</h2>
+        <p className="text-gray-600 mb-6">Select the visualization deployment for this project.</p>
+        <div className="mb-8 rounded-xl border border-gray-200 bg-gray-50 p-4 flex items-start gap-3">
+          <div className="w-9 h-9 rounded-lg bg-white flex items-center justify-center flex-shrink-0 border border-gray-200">
+            <Check className="w-4 h-4 text-gray-600" />
+          </div>
+          <div>
+            <p className="text-sm font-semibold text-gray-900">No HMI</p>
+            <p className="text-sm text-gray-700">This project will not use an HMI.</p>
+            <button
+              onClick={() => onSetNoHmi(false)}
+              className="text-sm text-green-700 hover:underline mt-2"
+            >
+              Choose an HMI instead
+            </button>
+          </div>
+        </div>
+        <div className="flex justify-end">
+          <Button onClick={onNext}>Next</Button>
+        </div>
+      </div>
+    );
+  }
 
   function switchHmiRefMode(mode) {
     setHmiRefMode(mode);
@@ -206,6 +240,14 @@ export default function HmiStep({
             <h3 className="text-lg font-semibold text-gray-900">Third-Party HMI</h3>
           </div>
         </div>
+        <button
+          type="button"
+          onClick={chooseNoHmi}
+          className="group mt-6 ml-auto flex items-center justify-end gap-1 text-sm text-gray-600 hover:text-green-700 transition cursor-pointer"
+        >
+          <span>No HMI</span>
+          <ArrowRight className="w-5 h-5 text-gray-500 flex-shrink-0 transition-transform group-hover:translate-x-1" />
+        </button>
       </div>
     );
   }

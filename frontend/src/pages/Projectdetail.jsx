@@ -320,6 +320,8 @@ async function handleDelete() {
               )}
             </div>
           </div>
+        ) : project.hmiDisabled ? (
+          <p className="text-sm text-gray-500">No HMI</p>
         ) : project.Hmi_id ? (
           <div className="rounded-xl border border-gray-200 p-4 inline-flex items-center gap-4">
             {project.Hmi_id.image && (
