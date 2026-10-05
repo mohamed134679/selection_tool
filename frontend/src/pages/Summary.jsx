@@ -10,7 +10,6 @@ import { Cpu, Monitor, ShieldCheck, FileText, CheckCircle2, AlertCircle, Papercl
 import { isHarmonyP6 } from "../lib/harmonyP6";
 import { buildRequiredLicenses } from "../lib/licensing";
 
-
 const FILE_BASE = "http://localhost:3000";
 const TEMPLATE_CATEGORIES = [
     { value: "standalone", label: "Standalone Architecture" },
@@ -52,8 +51,13 @@ export default function Summary() {
         return <LockedOverlay />;
     }
 
-    const isTemplate = projectDraft.mode === "template";
-    const isEditing = Boolean(projectDraft.editingProjectId);
+const isTemplate = projectDraft.mode === "template";
+const isEditingTemplate = Boolean(projectDraft.editingTemplateId);
+const isEditing = Boolean(projectDraft.editingProjectId);
+
+const currentImageSrc = imagePreview
+    || (projectDraft.templateMeta?.existingImageUrl ? `${FILE_BASE}${projectDraft.templateMeta.existingImageUrl}` : null);
+
 
     function updateTemplateMeta(updates) {
         setProjectDraft((prev) => ({
@@ -79,42 +83,46 @@ export default function Summary() {
                 throw new Error("You must be signed in to continue.");
             }
 
-            if (isTemplate) {
-                if (!projectDraft.templateMeta?.category) {
-                    throw new Error("Please choose a category before saving.");
-                }
+if (isTemplate) {
+    if (!projectDraft.templateMeta?.category) {
+        throw new Error("Please choose a category before saving.");
+    }
 
-                const formData = new FormData();
-                formData.append("name", projectDraft.name);
-                formData.append("description", projectDraft.description || "");
-                formData.append("category", projectDraft.templateMeta.category);
-                formData.append("SelectedHw", JSON.stringify(projectDraft.selectedHw));
-                if (projectDraft.hmiId) formData.append("Hmi_id", projectDraft.hmiId);
-                formData.append("hmiUsesControlHw", String(projectDraft.hmiUsesControlHw));
-                formData.append("hmiDisabled", String(projectDraft.hmiDisabled));
-                if (projectDraft.hmiRefNumber) formData.append("hmiRefNumber", projectDraft.hmiRefNumber);
-                formData.append("licences", JSON.stringify(projectDraft.licences));
-                if (projectDraft.templateMeta.imageFile) {
-                    formData.append("image", projectDraft.templateMeta.imageFile);
-                }
+    const formData = new FormData();
+    formData.append("name", projectDraft.name);
+    formData.append("description", projectDraft.description || "");
+    formData.append("category", projectDraft.templateMeta.category);
+    formData.append("SelectedHw", JSON.stringify(projectDraft.selectedHw));
+    if (projectDraft.hmiId) formData.append("Hmi_id", projectDraft.hmiId);
+    formData.append("hmiUsesControlHw", String(projectDraft.hmiUsesControlHw));
+    formData.append("hmiDisabled", String(projectDraft.hmiDisabled));
+    if (projectDraft.hmiRefNumber) formData.append("hmiRefNumber", projectDraft.hmiRefNumber);
+    formData.append("licences", JSON.stringify(projectDraft.licences));
+    if (projectDraft.templateMeta.imageFile) {
+        formData.append("image", projectDraft.templateMeta.imageFile);
+    }
 
-                const res = await authFetch("http://localhost:3000/templates", {
-                    method: "POST",
-                    body: formData,
-                });
-                if (!res.ok) {
-                    const body = await res.json().catch(() => ({}));
-                    if (res.status === 401) {
-                        navigate("/login");
-                        return;
-                    }
-                    throw new Error(body.message || "Failed to create template");
-                }
-                setSaved(true);
-                setProjectDraft((prev) => ({ ...prev, locked: true }));
-                navigate("/templates", { replace: true });
-                return;
-            }
+    const url = isEditingTemplate
+        ? `http://localhost:3000/templates/${projectDraft.editingTemplateId}`
+        : "http://localhost:3000/templates";
+
+    const res = await authFetch(url, {
+        method: isEditingTemplate ? "PUT" : "POST",
+        body: formData,
+    });
+    if (!res.ok) {
+        const body = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+            navigate("/login");
+            return;
+        }
+        throw new Error(body.message || (isEditingTemplate ? "Failed to update template" : "Failed to create template"));
+    }
+    setSaved(true);
+    setProjectDraft((prev) => ({ ...prev, locked: true }));
+    navigate("/templates", { replace: true });
+    return;
+}
 
             const payload = {
                 name: projectDraft.name,
@@ -239,9 +247,11 @@ const requiredLicenses = buildRequiredLicenses({
             <div className="mb-10">
                 <div className="flex items-start justify-between gap-4">
                     <div>
-                        <p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
-                            {isTemplate ? "New Template" : isEditing ? "Editing Project" : "Final Step"}
-                        </p>
+<p className="text-sm font-semibold text-green-700 uppercase tracking-wider mb-2">
+    {isTemplate
+        ? (isEditingTemplate ? "Editing Template" : "New Template")
+        : isEditing ? "Editing Project" : "Final Step"}
+</p>
                         <h1 className="text-3xl font-bold text-gray-900 mb-2">
                             {projectDraft.name || (isTemplate ? "Template Summary" : "Project Summary")}
                         </h1>
@@ -326,16 +336,16 @@ const requiredLicenses = buildRequiredLicenses({
             <div>
                 <p className="text-sm text-gray-600 mb-2">Image</p>
                 <label className="flex items-center justify-center w-full h-40 rounded-xl border-2 border-dashed border-gray-300 hover:border-green-600 cursor-pointer overflow-hidden transition">
-                    {imagePreview ? (
-                        <img src={imagePreview} alt="Preview" className="w-full h-full object-cover" />
-                    ) : (
-                        <div className="flex flex-col items-center text-gray-400">
-                            <ImagePlus className="w-8 h-8 mb-2" />
-                            <span className="text-sm">Click to upload</span>
-                        </div>
-                    )}
-                    <input type="file" accept="image/*" onChange={handleTemplateImageChange} className="hidden" />
-                </label>
+    {currentImageSrc ? (
+        <img src={currentImageSrc} alt="Preview" className="w-full h-full object-contain bg-gray-50" />
+    ) : (
+        <div className="flex flex-col items-center text-gray-400">
+            <ImagePlus className="w-8 h-8 mb-2" />
+            <span className="text-sm">Click to upload</span>
+        </div>
+    )}
+    <input type="file" accept="image/*" onChange={handleTemplateImageChange} className="hidden" />
+</label>
             </div>
         </div>
     </section>
@@ -522,28 +532,26 @@ const requiredLicenses = buildRequiredLicenses({
                         {saveError}
                     </p>
                 )}
-                {saved ? (
-                    <p className="flex items-center gap-2 text-green-700 font-medium">
-                        <CheckCircle2 className="w-5 h-5" />
-                        {isTemplate
-                            ? "Template created!"
-                            : wasEditing
-                            ? "Changes saved and resubmitted for review!"
-                            : "Project created!"}
-                    </p>
-                ) : (
-                    <button
-                        disabled={!canSave}
-                        onClick={saveProject}
-                        className={`rounded-lg bg-green-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-green-700 transition ${
-                            !canSave ? "opacity-40 cursor-not-allowed" : ""
-                        }`}
-                    >
-                        {saving
-                            ? (isTemplate ? "Creating..." : isEditing ? "Saving..." : "Creating...")
-                            : (isTemplate ? "Create Template" : isEditing ? "Save & Resubmit" : "Create Project")}
-                    </button>
-                )}
+{saved ? (
+    <p className="flex items-center gap-2 text-green-700 font-medium">
+        <CheckCircle2 className="w-5 h-5" />
+        {isTemplate
+            ? (isEditingTemplate ? "Template updated!" : "Template created!")
+            : wasEditing ? "Changes saved and resubmitted for review!" : "Project created!"}
+    </p>
+) : (
+    <button
+        disabled={!canSave}
+        onClick={saveProject}
+        className={`rounded-lg bg-green-600 text-white px-6 py-2.5 text-sm font-semibold hover:bg-green-700 transition ${
+            !canSave ? "opacity-40 cursor-not-allowed" : ""
+        }`}
+    >
+        {saving
+            ? (isTemplate ? (isEditingTemplate ? "Saving..." : "Creating...") : isEditing ? "Saving..." : "Creating...")
+            : (isTemplate ? (isEditingTemplate ? "Save Template" : "Create Template") : isEditing ? "Save & Resubmit" : "Create Project")}
+    </button>
+)}
             </div>
         </div>
     );

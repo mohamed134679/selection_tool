@@ -5,7 +5,7 @@ import AdminUsers from "./AdminUsers.jsx";
 import AdminHardwareManager from "./AdminHardwareManager.jsx";
 import AdminHmiManager from "./AdminHmiManager.jsx";
 import AdminLicenseManager from "./AdminLicenseManager.jsx";
-import AdminCreateTemplatePage from "./AdminCreateTemplatePage.jsx";
+import AdminTemplatesManager from "./AdminTemplatesManager.jsx";
 
 const TABS = [
   { key: "projects", label: "Project Review", icon: ClipboardList },
@@ -52,7 +52,7 @@ export default function AdminDashboard() {
       {activeTab === "hardware" && <AdminHardwareManager />}
       {activeTab === "hmi" && <AdminHmiManager />}
       {activeTab === "licenses" && <AdminLicenseManager />}
-      {activeTab === "templates" && <AdminCreateTemplatePage />}
+      {activeTab === "templates" && <AdminTemplatesManager />}
     </div>
   );
 }

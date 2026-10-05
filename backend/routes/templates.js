@@ -67,6 +67,34 @@ router.post('/', requireAuth, requireAdmin, upload.single('image'), async (req, 
   res.status(201).json(template);
 });
 
+// PUT /templates/:id — admin only. Image is optional; if omitted, the
+// existing imageUrl is left untouched.
+router.put('/:id', requireAuth, requireAdmin, upload.single('image'), async (req, res) => {
+  const { name, description, category, SelectedHw, Hmi_id, hmiUsesControlHw, hmiDisabled, hmiRefNumber, licences } = req.body;
+  if (!name || !category) {
+    return res.status(400).json({ message: 'name and category are required' });
+  }
+
+  const updates = {
+    name,
+    description: description ?? '',
+    category,
+    SelectedHw: SelectedHw ? JSON.parse(SelectedHw) : [],
+    Hmi_id: Hmi_id || null,
+    hmiUsesControlHw: hmiUsesControlHw === 'true',
+    hmiDisabled: hmiDisabled === 'true',
+    hmiRefNumber: hmiRefNumber || null,
+    licences: licences ? JSON.parse(licences) : undefined,
+  };
+  if (req.file) {
+    updates.imageUrl = `/uploads/templates/${req.file.filename}`;
+  }
+
+  const updated = await Template.findByIdAndUpdate(req.params.id, updates, { new: true, runValidators: true });
+  if (!updated) return res.status(404).json({ message: 'Template not found' });
+  res.json(updated);
+});
+
 // DELETE /templates/:id — admin only
 router.delete('/:id', requireAuth, requireAdmin, async (req, res) => {
   await Template.findByIdAndDelete(req.params.id);
