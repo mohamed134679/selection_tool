@@ -2,8 +2,18 @@ const mongoose = require('mongoose');
 const projectSchema = new mongoose.Schema({
   name: { type: String, required: true },
   description: { type: String },
-createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-createdByUsername: { type: String, default: null }, // snapshot, filled in when the owning user is deleted
+  createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
+  createdByUsername: { type: String, default: null },
+
+  // "wizard" = built via /hardware → /hmi → /licence (structured catalog data below)
+  // "manual" = created from a manual-entry template; a flat BOM list instead
+  sourceType: { type: String, enum: ['wizard', 'manual'], default: 'wizard' },
+  items: [{
+    reference: { type: String, default: '' },
+    description: { type: String, default: '' },
+    quantity: { type: Number, default: 1 },
+  }],
+
   HMI: { type: String },
   number_of_hw: { type: Number },
   SelectedHw: [{
@@ -25,24 +35,11 @@ createdByUsername: { type: String, default: null }, // snapshot, filled in when 
       tier: { type: String, enum: ['Standard', 'Professional'] },
       addons: [{ type: String, enum: ['High Availability', 'Asset Link', 'Procedural Libraries'] }]
     },
-    runtime: {
-      ioPoints: { type: Number }
-    },
-    orchestration: {
-      nodeCount: { type: Number }
-    },
-    communication: {
-      protocols: [{ type: String, enum: ['Profinet', 'IEC 61850', 'OPC UA as a client'] }]
-    }
+    runtime: { ioPoints: { type: Number } },
+    orchestration: { nodeCount: { type: Number } },
+    communication: { protocols: [{ type: String, enum: ['Profinet', 'IEC 61850', 'OPC UA as a client'] }] }
   },
-  // Admin review workflow. Any edit/resubmit by the owner resets this back
-  // to 'pending' (see routes/projects.js PUT /:id) — only admins move it
-  // to 'needs_edit' or 'approved' (see routes/adminProjects.js).
-  reviewStatus: {
-    type: String,
-    enum: ['pending', 'needs_edit', 'approved'],
-    default: 'pending'
-  },
+  reviewStatus: { type: String, enum: ['pending', 'needs_edit', 'approved'], default: 'pending' },
   reviewComment: { type: String },
   reviewedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   reviewedAt: { type: Date },

@@ -1,7 +1,7 @@
 // frontend/src/components/TemplatesPage.jsx
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { LayoutGrid, ShieldCheck, ArrowLeft, Plus, X, Cpu, Monitor, FileText, Paperclip, Check, Pencil, Trash2 } from 'lucide-react'
+import { LayoutGrid, ShieldCheck, ArrowLeft, Plus, X, Cpu, Monitor, FileText, Paperclip, Check, Pencil, Trash2, Search } from 'lucide-react'
 import { authFetch } from '../api.js'
 import { useProjectDraft } from '../context/ProjectDraftContext.jsx'
 import { isHarmonyP6 } from '../lib/harmonyP6'
@@ -26,6 +26,10 @@ export default function TemplatesPage() {
   const [licenseCatalog, setLicenseCatalog] = useState([])
   const [deleting, setDeleting] = useState(false)
   const [deleteError, setDeleteError] = useState(null)
+  const [searchQuery, setSearchQuery] = useState('')
+  const [previewQuantities, setPreviewQuantities] = useState([])
+  const [usingTemplate, setUsingTemplate] = useState(false)
+  const [useTemplateError, setUseTemplateError] = useState(null)
 
   // ASSUMPTION: adjust to however you actually expose the logged-in user's role.
   let isAdmin = false
@@ -66,29 +70,72 @@ export default function TemplatesPage() {
     fetch('http://localhost:3000/license').then((res) => res.json()).then(setLicenseCatalog).catch(() => {})
   }, [])
 
-  function chooseTemplate(template) {
-    setProjectDraft({
-      mode: "project",
-      name: template.name,
-      description: template.description ?? '',
-      locked: false,
-      justCreated: false,
-      editingProjectId: null,
-      editingTemplateId: null,
-      templateMeta: null,
-      selectedHw: template.SelectedHw ?? [],
-      hmiId: template.Hmi_id ?? null,
-      hmiUsesControlHw: template.hmiUsesControlHw ?? false,
-      hmiDisabled: template.hmiDisabled ?? false,
-      hmiRefNumber: template.hmiRefNumber ?? null,
-      licences: template.licences ?? {
-        buildTime: { wanted: null, tier: null, addons: [] },
-        runtime: { ioPoints: null },
-        orchestration: { nodeCount: null },
-        communication: { protocols: [] },
-      },
-    })
-    navigate('/hardware')
+  async function chooseTemplate(template) {
+    const templateItems = (template.items ?? []).map((item, index) => ({
+      ...item,
+      quantity: previewQuantities[index]?.quantity ?? item.quantity ?? 1,
+    }))
+    if (template.sourceType === 'manual') {
+      setProjectDraft({
+        mode: "project",
+        sourceType: "manual",
+        items: templateItems,
+        name: template.name,
+        description: template.description ?? '',
+        locked: false,
+        justCreated: false,
+        editingProjectId: null,
+        editingTemplateId: null,
+        templateMeta: null,
+        selectedHw: [],
+        hmiId: null,
+        hmiUsesControlHw: false,
+        hmiDisabled: true,
+        hmiRefNumber: null,
+        licences: {
+          buildTime: { wanted: null, tier: null, addons: [] },
+          runtime: { ioPoints: null },
+          orchestration: { nodeCount: null },
+          communication: { protocols: [] },
+        },
+      })
+      navigate('/summary')
+      return
+    }
+    setUsingTemplate(true)
+    setUseTemplateError(null)
+    try {
+      const res = await authFetch('http://localhost:3000/projects', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: template.name,
+          description: template.description ?? '',
+          sourceType: 'wizard',
+          items: [],
+          SelectedHw: template.SelectedHw ?? [],
+          Hmi_id: template.Hmi_id ?? null,
+          hmiUsesControlHw: template.hmiUsesControlHw ?? false,
+          hmiDisabled: template.hmiDisabled ?? false,
+          hmiRefNumber: template.hmiRefNumber ?? null,
+          licences: template.licences ?? {
+            buildTime: { wanted: null, tier: null, addons: [] },
+            runtime: { ioPoints: null },
+            orchestration: { nodeCount: null },
+            communication: { protocols: [] },
+          },
+        }),
+      })
+      const body = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(body.message || 'Could not save the project.')
+      setPreviewTemplate(null)
+      navigate(`/projects/${body._id}`)
+    } catch (err) {
+      console.error(err)
+      setUseTemplateError(err.message || 'Could not save the project.')
+    } finally {
+      setUsingTemplate(false)
+    }
   }
 
   function editTemplate(template) {
@@ -115,6 +162,17 @@ export default function TemplatesPage() {
   }
 
   const filtered = templates.filter((t) => t.category === activeCategory)
+    .filter((t) => {
+      const query = searchQuery.trim().toLowerCase()
+      if (!query) return true
+      return [
+        t.name,
+        t.description,
+        ...(t.items || []).flatMap((item) => [item.reference, item.description]),
+        ...(t.SelectedHw || []).flatMap((entry) => [entry.refNumber, entry.ioRefNumber]),
+        t.hmiRefNumber,
+      ].some((value) => String(value || '').toLowerCase().includes(query))
+    })
 
   // --- Detailed preview computations (mirrors Summary.jsx) ---
   const previewHw = previewTemplate?.SelectedHw ?? []
@@ -173,6 +231,15 @@ export default function TemplatesPage() {
           <div>
             <h1 className="text-3xl font-bold text-gray-900 mb-2">Choose a Template</h1>
             <p className="text-gray-600">Start from a previously saved project.</p>
+            <div className="relative mt-4 max-w-md">
+              <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+              <input
+                value={searchQuery}
+                onChange={(event) => setSearchQuery(event.target.value)}
+                placeholder="Search by template or reference"
+                className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm text-gray-900 focus:border-green-600 focus:outline-none"
+              />
+            </div>
           </div>
 
           {isAdmin && (
@@ -218,7 +285,10 @@ export default function TemplatesPage() {
             {filtered.map((template) => (
               <div
                 key={template._id}
-                onClick={() => setPreviewTemplate(template)}
+                onClick={() => {
+                  setPreviewTemplate(template)
+                  setPreviewQuantities((template.items || []).map((item) => ({ quantity: item.quantity ?? 1 })))
+                }}
                 className="h-full rounded-2xl border border-gray-200 hover:border-green-600 hover:shadow-md transition cursor-pointer overflow-hidden"
               >
                 {template.imageUrl ? (
@@ -305,6 +375,38 @@ export default function TemplatesPage() {
 
               {deleteError && (
                 <p className="text-sm text-red-600 mb-4">{deleteError}</p>
+              )}
+              {useTemplateError && (
+                <p className="text-sm text-red-600 mb-4">{useTemplateError}</p>
+              )}
+
+              {previewTemplate.sourceType === 'manual' && (
+                <section className="mb-6">
+                  <div className="flex items-center gap-2 mb-3">
+                    <FileText className="w-4 h-4 text-green-600" />
+                    <h4 className="text-sm font-semibold text-gray-900">Template Items</h4>
+                  </div>
+                  {previewTemplate.items?.length ? (
+                    <div className="rounded-xl border border-gray-200 overflow-hidden">
+                      {previewTemplate.items.map((item, index) => (
+                        <div key={`${item.reference}-${index}`} className="grid grid-cols-[1fr_2fr_90px] gap-3 px-3 py-2 border-b last:border-b-0 border-gray-100 text-sm">
+                          <span className="font-mono text-green-700">{item.reference || '—'}</span>
+                          <span className="text-gray-700">{item.description || '—'}</span>
+                          <label className="grid gap-1 text-xs text-gray-500">
+                            Quantity
+                            <input
+                              type="number"
+                              min="1"
+                              value={previewQuantities[index]?.quantity ?? item.quantity ?? 1}
+                              onChange={(event) => setPreviewQuantities((quantities) => quantities.map((quantity, quantityIndex) => quantityIndex === index ? { quantity: event.target.value } : quantity))}
+                              className="rounded border border-gray-300 px-2 py-1 text-sm text-gray-900"
+                            />
+                          </label>
+                        </div>
+                      ))}
+                    </div>
+                  ) : <p className="text-sm text-gray-500">No template items.</p>}
+                </section>
               )}
 
               {/* Hardware */}
@@ -458,9 +560,14 @@ export default function TemplatesPage() {
                 </button>
                 <button
                   onClick={() => chooseTemplate(previewTemplate)}
-                  className="rounded-lg bg-green-600 text-white px-5 py-2 text-sm font-medium hover:bg-green-700"
+                  disabled={usingTemplate}
+                  className="rounded-lg bg-green-600 text-white px-5 py-2 text-sm font-medium hover:bg-green-700 disabled:opacity-40"
                 >
-                  Use This Template
+                  {usingTemplate
+                    ? 'Saving…'
+                    : previewTemplate.sourceType === 'wizard'
+                    ? 'Use & Save Project'
+                    : 'Use This Template'}
                 </button>
               </div>
             </div>

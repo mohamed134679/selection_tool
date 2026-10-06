@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { createCatalogItem, updateCatalogItem, deleteCatalogItem } from "../../api.js";
-import { Plus, Pencil, Trash2, X } from "lucide-react";
+import { Plus, Pencil, Trash2, X, Search } from "lucide-react";
 
 const emptyForm = { name: "", reference_no: "", description: "" };
 
@@ -13,6 +13,7 @@ export default function AdminLicenseManager() {
   const [form, setForm] = useState(emptyForm);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
 
   function loadAll() {
     setLoading(true);
@@ -79,6 +80,10 @@ export default function AdminLicenseManager() {
 
   return (
     <div>
+      <div className="relative max-w-md mb-4">
+        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+        <input value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} placeholder="Search licenses..." className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm" />
+      </div>
       <div className="flex justify-end mb-4">
         <button
           onClick={openCreate}
@@ -97,7 +102,7 @@ export default function AdminLicenseManager() {
       )}
 
       <div className="space-y-3">
-        {items.map((item) => (
+        {items.filter((item) => `${item.name} ${item.reference_no} ${item.description}`.toLowerCase().includes(searchQuery.toLowerCase())).map((item) => (
           <div key={item._id} className="rounded-xl border border-gray-200 p-4 flex items-start justify-between gap-4">
             <div>
               <div className="flex items-center gap-2 mb-1">

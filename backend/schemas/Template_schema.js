@@ -8,6 +8,18 @@ const templateSchema = new mongoose.Schema(
     category: { type: String, enum: ['standalone', 'redundant'], required: true },
     imageUrl: { type: String, default: null },
 
+    // "wizard" = built via /hardware → /hmi → /licence (structured catalog data below)
+    // "manual" = admin typed a flat reference/description/quantity list
+    sourceType: { type: String, enum: ['wizard', 'manual'], default: 'wizard' },
+
+    // Manual entry — only populated when sourceType === 'manual'
+    items: [{
+      reference: { type: String, default: '' },
+      description: { type: String, default: '' },
+      quantity: { type: Number, default: 1 },
+    }],
+
+    // Wizard entry — only populated when sourceType === 'wizard'
     SelectedHw: [{
       hw_id: { type: mongoose.Schema.Types.ObjectId, ref: 'Hardware' },
       quantity: { type: Number },

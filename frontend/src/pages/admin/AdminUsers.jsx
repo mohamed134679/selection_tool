@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { getAllUsers, setUserRole, deleteUser } from "../../api.js";
-import { ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
+import { Search, ShieldCheck, ShieldOff, Trash2 } from "lucide-react";
 
 export default function AdminUsers() {
   const [users, setUsers] = useState([]);
@@ -8,6 +8,7 @@ export default function AdminUsers() {
   const [error, setError] = useState(null);
   const [actionError, setActionError] = useState(null);
   const [busyId, setBusyId] = useState(null);
+  const [searchQuery, setSearchQuery] = useState("");
   const currentUserId = localStorage.getItem("userId");
 
   function load() {
@@ -52,8 +53,27 @@ export default function AdminUsers() {
     }
   }
 
+  const normalizedQuery = searchQuery.trim().toLowerCase();
+  const filteredUsers = users.filter((user) =>
+    [user.username, user.accountType, user.status, user.role]
+      .filter(Boolean)
+      .join(" ")
+      .toLowerCase()
+      .includes(normalizedQuery)
+  );
+
   return (
     <div>
+      <div className="relative max-w-md mb-4">
+        <Search className="absolute left-3 top-2.5 w-4 h-4 text-gray-400" />
+        <input
+          type="text"
+          value={searchQuery}
+          onChange={(event) => setSearchQuery(event.target.value)}
+          placeholder="Search users..."
+          className="w-full rounded-lg border border-gray-300 py-2 pl-9 pr-3 text-sm focus:outline-none focus:ring-2 focus:ring-green-600"
+        />
+      </div>
       {loading && <p className="text-gray-500 text-sm">Loading users...</p>}
       {error && (
         <p className="text-sm text-red-700 bg-red-50 border-l-2 border-red-500 rounded-r-md px-3 py-2 mb-4">
@@ -79,7 +99,7 @@ export default function AdminUsers() {
               </tr>
             </thead>
             <tbody>
-              {users.map((user) => {
+              {filteredUsers.map((user) => {
                 const isSelf = user._id === currentUserId;
                 return (
                   <tr key={user._id} className="border-t border-gray-100">
@@ -141,6 +161,9 @@ export default function AdminUsers() {
               })}
             </tbody>
           </table>
+          {filteredUsers.length === 0 && (
+            <p className="px-4 py-6 text-sm text-gray-500">No users match your search.</p>
+          )}
         </div>
       )}
     </div>

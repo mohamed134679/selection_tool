@@ -127,6 +127,8 @@ if (isTemplate) {
             const payload = {
                 name: projectDraft.name,
                 description: projectDraft.description,
+                sourceType: projectDraft.sourceType || "wizard",
+                items: projectDraft.items || [],
                 SelectedHw: projectDraft.selectedHw,
                 Hmi_id: projectDraft.hmiId,
                 hmiUsesControlHw: projectDraft.hmiUsesControlHw,

@@ -23,6 +23,7 @@ import RequireAdmin from "./components/RequireAdmin.jsx";
 import AdminDashboard from "./pages/admin/AdminDashboard.jsx";
 import TemplatesPage from "./components/TemplatesPage.jsx";
 import AdminCreateTemplatePage from './pages/admin/AdminCreateTemplatePage.jsx';
+import AdminManualTemplateForm from './pages/admin/AdminManualTemplateForm.jsx';
 
 const WIZARD_PATHS = ["/hardware", "/hmi", "/licence", "/summary", "/projects/new"];
 
@@ -60,6 +61,8 @@ function AppRoutes() {
         }
       />
       <Route path="/admin/templates/new" element={<AdminCreateTemplatePage />} />
+      <Route path="/admin/templates/manual" element={<AdminManualTemplateForm />} />
+      <Route path="/admin/templates/manual/:id" element={<AdminManualTemplateForm />} />
     </Routes>
   );
 }

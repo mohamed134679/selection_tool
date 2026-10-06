@@ -5,6 +5,8 @@ const ProjectDraftContext = createContext();
 
 const emptyDraft = {
   mode: "project", // "project" | "template" — which flow the wizard is building for
+  sourceType: "wizard",
+  items: [],
   name: "",
   description: "",
   locked: false,
@@ -36,6 +38,8 @@ export const ProjectDraftProvider = ({ children }) => {
   function loadProjectForEdit(project) {
     setProjectDraft({
       mode: "project",
+      sourceType: project.sourceType || "wizard",
+      items: project.items || [],
       name: project.name || "",
       description: project.description || "",
       locked: false,
@@ -75,6 +79,8 @@ export const ProjectDraftProvider = ({ children }) => {
   function loadTemplateForEdit(template) {
     setProjectDraft({
       mode: "template",
+      sourceType: template.sourceType || "wizard",
+      items: template.items || [],
       name: template.name || "",
       description: template.description || "",
       locked: false,

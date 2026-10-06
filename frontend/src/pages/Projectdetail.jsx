@@ -92,10 +92,6 @@ async function handleDelete() {
     }
   }
 
-  function handleEditAndResubmit() {
-    loadProjectForEdit(project);
-    navigate("/hardware");
-  }
 
   if (loading) {
     return (
@@ -198,15 +194,7 @@ async function handleDelete() {
         </div>
         <div className="flex items-center gap-2 flex-shrink-0">
           <ExportReportButtons project={projectFromDetail(project)} />
-          {project.reviewStatus === "needs_edit" && (
-            <button
-              onClick={handleEditAndResubmit}
-              className="inline-flex items-center gap-1.5 text-sm text-green-700 border border-green-200 hover:bg-green-50 rounded-lg px-3 py-1.5 transition"
-            >
-              <Pencil className="w-4 h-4" />
-              Edit & Resubmit
-            </button>
-          )}
+          {project.reviewStatus === "needs_edit"}
           <button
             onClick={handleDelete}
             disabled={deleting}
